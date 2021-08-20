@@ -39,7 +39,7 @@ config CAN_MCUX_FLEXCAN
 
 config USB_KINETIS
 	default y
-	depends on USB
+	depends on USB_DEVICE_DRIVER
 
 if NETWORKING
 
