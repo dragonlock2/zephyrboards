@@ -1,0 +1,4 @@
+config BOARD_K66F_BREAKOUT
+	bool "MK66F Breakout Board"
+	depends on SOC_SERIES_KINETIS_K6X
+	select SOC_PART_NUMBER_MK66FN2M0VMD18

@@ -1,0 +1,57 @@
+if BOARD_K66F_BREAKOUT
+
+# bare minimum
+config BOARD
+	default "k66f_breakout"
+
+config OSC_XTAL0_FREQ
+	default 12000000
+
+config MCG_PRDIV0
+	default 0x0
+
+config MCG_VDIV0
+	default 0x4 # 0xe for 180MHz
+
+config MCG_FCRDIV
+	default 1
+
+config UART_MCUX
+	default y
+	depends on SERIAL
+
+# supported peripherals
+config ADC_MCUX_ADC16
+	default y
+	depends on ADC
+
+config TEMP_KINETIS
+	default y
+	depends on SENSOR && ADC
+
+config I2C_MCUX
+	default y
+	depends on I2C
+
+config CAN_MCUX_FLEXCAN
+	default y
+	depends on CAN
+
+config USB_KINETIS
+	default y
+	depends on USB
+
+if NETWORKING
+
+config NET_L2_ETHERNET
+	default y
+
+config ETH_MCUX
+	default y
+
+config ETH_MCUX_RMII_EXT_CLK
+	default y
+
+endif # NETWORKING
+
+endif # BOARD_K66F_BREAKOUT
