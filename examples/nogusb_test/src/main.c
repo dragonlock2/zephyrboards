@@ -7,16 +7,6 @@
 #include <drivers/can.h>
 #include <usb/usb_device.h>
 
-const struct gpio_dt_spec cc[] = {
-	GPIO_DT_SPEC_GET(DT_NODELABEL(cc1), gpios),
-	GPIO_DT_SPEC_GET(DT_NODELABEL(cc2), gpios)
-};
-
-const struct gpio_dt_spec dbcc[] = {
-	GPIO_DT_SPEC_GET(DT_NODELABEL(dbcc1), gpios),
-	GPIO_DT_SPEC_GET(DT_NODELABEL(dbcc2), gpios)
-};
-
 const struct gpio_dt_spec led[] = {
 	GPIO_DT_SPEC_GET(DT_NODELABEL(led_red), gpios),
 	GPIO_DT_SPEC_GET(DT_NODELABEL(led_green), gpios),
@@ -64,12 +54,6 @@ void btn_cb(const struct device *port, struct gpio_callback *cb, gpio_port_pins_
 }
 
 int main() {
-	// UCPD (CC pins) TODO currently causes power cycling
-	gpio_pin_configure_dt(&cc[0], GPIO_DISCONNECTED);
-	gpio_pin_configure_dt(&cc[1], GPIO_DISCONNECTED);
-	gpio_pin_configure_dt(&dbcc[0], GPIO_DISCONNECTED);
-	gpio_pin_configure_dt(&dbcc[1], GPIO_DISCONNECTED);
-
 	// GPIO
 	gpio_pin_configure_dt(&led[0], GPIO_OUTPUT_INACTIVE);
 	gpio_pin_configure_dt(&led[1], GPIO_OUTPUT_INACTIVE);
@@ -87,6 +71,7 @@ int main() {
 	// USB
 	const struct device *cdc_dev = device_get_binding("CDC_ACM_0");
 	printk("Init USB: %d\r\n", usb_enable(NULL));
+	UNUSED(cdc_dev);
 
 	// ADC
 	uint16_t vbus_samples[1];

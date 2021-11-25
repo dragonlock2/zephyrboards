@@ -40,23 +40,6 @@
 			gpios = <&gpioc 15 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 			label = "DBG2";
 		};
-
-		cc1: cc1 {
-			gpios = <&gpioa 8 GPIO_ACTIVE_HIGH>;
-			label = "CC1";
-		};
-		cc2: cc2 {
-			gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
-			label = "CC2";
-		};
-		dbcc1: dbcc1 {
-			gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>;
-			label = "DBCC1";
-		};
-		dbcc2: dbcc2 {
-			gpios = <&gpioa 10 GPIO_ACTIVE_HIGH>;
-			label = "DBCC2";
-		};
 	};
 
 	aliases {

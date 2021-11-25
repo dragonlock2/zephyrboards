@@ -1,0 +1,13 @@
+diff --git a/soc/arm/st_stm32/stm32g0/soc.c b/soc/arm/st_stm32/stm32g0/soc.c
+index 7375c1b8b9..76008e8c30 100644
+--- a/soc/arm/st_stm32/stm32g0/soc.c
++++ b/soc/arm/st_stm32/stm32g0/soc.c
+@@ -51,7 +51,7 @@ static int stm32g0_init(const struct device *arg)
+ #if defined(SYSCFG_CFGR1_UCPD1_STROBE) || defined(SYSCFG_CFGR1_UCPD2_STROBE)
+ 	/* Disable the internal Pull-Up in Dead Battery pins of UCPD peripheral */
+ 	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
+-	LL_SYSCFG_DisableDBATT(LL_SYSCFG_UCPD1_STROBE | LL_SYSCFG_UCPD2_STROBE);
++	// LL_SYSCFG_DisableDBATT(LL_SYSCFG_UCPD1_STROBE | LL_SYSCFG_UCPD2_STROBE);
+ #endif /* SYSCFG_CFGR1_UCPD1_STROBE || SYSCFG_CFGR1_UCPD2_STROBE */
+ 
+ 	return 0;
