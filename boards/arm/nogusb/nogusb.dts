@@ -1,0 +1,232 @@
+/dts-v1/;
+#include <st/g0/stm32g0b1Xe.dtsi>
+#include <st/g0/stm32g0b1k(c-e)txn-pinctrl.dtsi>
+
+/ {
+	model = "NOGUSB STM32G0B1KET6N Development Board";
+	compatible = "st,stm32g0b1ke";
+
+	// bare minimum
+	chosen {
+		zephyr,console = &usart5;
+		zephyr,shell-uart = &usart5;
+		zephyr,uart-mcumgr = &usart5;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+	};
+
+	// supported peripherals
+	leds {
+		compatible = "gpio-leds";
+		led_red: led_0 {
+			gpios = <&gpiob 9 GPIO_ACTIVE_LOW>;
+		};
+		led_green: led_1 {
+			gpios = <&gpiob 8 GPIO_ACTIVE_LOW>;
+		};
+		led_blue: led_2 {
+			gpios = <&gpiob 7 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	buttons {
+		compatible = "gpio-keys";
+		dbg_1: button_0 {
+			gpios = <&gpioc 14 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			label = "DBG1";
+		};
+		dbg_2: button_1 {
+			gpios = <&gpioc 15 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			label = "DBG2";
+		};
+
+		cc1: cc1 {
+			gpios = <&gpioa 8 GPIO_ACTIVE_HIGH>;
+			label = "CC1";
+		};
+		cc2: cc2 {
+			gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
+			label = "CC2";
+		};
+		dbcc1: dbcc1 {
+			gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>;
+			label = "DBCC1";
+		};
+		dbcc2: dbcc2 {
+			gpios = <&gpioa 10 GPIO_ACTIVE_HIGH>;
+			label = "DBCC2";
+		};
+	};
+
+	aliases {
+		led0 = &led_red;
+		led1 = &led_green;
+		led2 = &led_blue;
+		sw0  = &dbg_1;
+		sw1  = &dbg_2;
+	};
+
+	power-states {
+		stop0: state0 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			substate-id = <1>;
+			min-residency-us = <20>;
+		};
+		stop1: state1 {
+			compatible = "zephyr,power-state";
+			power-state-name = "suspend-to-idle";
+			substate-id = <2>;
+			min-residency-us = <100>;
+		};
+	};
+
+	soc {
+		can {
+			compatible = "bosch,m-can-base";
+			#address-cells = <1>;
+			#size-cells = <1>;
+			std-filter-elements = <28>;
+			ext-filter-elements = <8>;
+			rx-fifo0-elements = <3>;
+			rx-fifo1-elements = <3>;
+			rx-buffer-elements = <0>;
+			tx-buffer-elements = <3>;
+
+			can1: can@40006400 {
+				compatible = "st,stm32-fdcan";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0x40006400 0x400>, <0x4000B400 0x350>;
+				reg-names = "m_can", "message_ram";
+				interrupts = <21 0>, <22 0>;
+				interrupt-names = "LINE_0", "LINE_1";
+				status = "disabled";
+				label = "CAN_1";
+			};
+
+			can2: can@40006800 {
+				compatible = "st,stm32-fdcan";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0x40006800 0x400>, <0x4000B750 0x350>;
+				reg-names = "m_can", "message_ram";
+				interrupts = <21 0>, <22 0>;
+				interrupt-names = "LINE_0", "LINE_1";
+				status = "disabled";
+				label = "CAN_2";
+			};
+		};
+	};
+};
+
+// bare minimum
+&clk_hsi {
+	status = "okay";
+};
+
+&pll { // 64 MHz
+	div-m = <1>;
+	mul-n = <8>;
+	div-p = <2>;
+	div-q = <2>;
+	div-r = <2>;
+	clocks = <&clk_hsi>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(64)>;
+	ahb-prescaler = <1>;
+	apb1-prescaler = <1>;
+};
+
+&cpu0 {
+	cpu-power-states = <&stop0 &stop1>;
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 0x0000C000>;
+			read-only;
+		};
+		slot0_partition: partition@C000 {
+			label = "image-0";
+			reg = <0x0000C000 0x00032000>;
+		};
+		slot1_partition: partition@3E000 {
+			label = "image-1";
+			reg = <0x0003E000 0x00032000>;
+		};
+		/* final 64KiB reserved for app storage partition */
+		storage_partition: partition@70000 {
+			label = "storage";
+			reg = <0x00070000 0x00010000>;
+		};
+	};
+};
+
+&usart5 {
+	pinctrl-0 = <&usart5_tx_pd3 &usart5_rx_pd2>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+// supported peripherals
+zephyr_udc0: &usb {
+	pinctrl-0 = <&usb_dm_pa11 &usb_dp_pa12>;
+	status = "okay";
+};
+
+&adc1 {
+	pinctrl-0 = <&adc1_in1_pa1>;
+	status = "okay";
+};
+
+&spi2 {
+	pinctrl-0 = <&spi2_sck_pa0 &spi2_miso_pa3 &spi2_mosi_pa4>;
+	status = "okay";
+};
+
+&i2c2 {
+	pinctrl-0 = <&i2c2_scl_pa7 &i2c2_sda_pa6>;
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+};
+
+&dac1 {
+	pinctrl-0 = <&dac1_out2_pa5>;
+	status = "okay";
+};
+
+&can1 {
+	status = "okay";
+	pinctrl-0 = <&fdcan1_rx_pd0 &fdcan1_tx_pd1>;
+	bus-speed = <1000000>;
+	sjw = <1>;
+	sample-point = <875>;
+	bus-speed-data = <8000000>;
+	sjw-data = <1>;
+	sample-point-data = <875>;
+};
+
+&can2 {
+	// status = "okay"; // shared interrupt, can't enable both yet
+	pinctrl-0 = <&fdcan2_rx_pb0 &fdcan2_tx_pb1>;
+};
+
+&rtc {
+	status = "okay";
+};
+
+&iwdg {
+	status = "okay";
+};

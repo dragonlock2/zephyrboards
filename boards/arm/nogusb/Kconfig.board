@@ -1,0 +1,3 @@
+config BOARD_NOGUSB
+	bool "NOGUSB STM32G0B1KET6N Development Board"
+	depends on SOC_STM32G0B1XX
