@@ -183,7 +183,7 @@
 	bias-pull-up;
 };
 
-&usbotg {
+zephyr_udc0: &usbotg {
 	status = "okay";
 	num-bidir-endpoints = <8>;
 };
