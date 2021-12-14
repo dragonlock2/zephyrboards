@@ -155,8 +155,8 @@ int main() {
 		.id      = 0x69,
 		.id_type = CAN_STANDARD_IDENTIFIER,
 		.rtr     = CAN_DATAFRAME,
-		.fd      = false, // normal frame
-		.brs     = false  // normal frame
+		.fd      = true,
+		.brs     = true
 	};
 
 	int idx = 0;
@@ -171,9 +171,9 @@ int main() {
 		txmsg.dlc = can_bytes_to_dlc(sizeof(vbus));
 		can_send(can, &txmsg, K_FOREVER, NULL, NULL);
 
-		// struct zcan_frame rxmsg;
-		// k_msgq_get(&can_msgq, &rxmsg, K_FOREVER);
-		// printk("ID: %d DLC: %d\r\n", rxmsg.id, rxmsg.dlc);
+		struct zcan_frame rxmsg;
+		k_msgq_get(&can_msgq, &rxmsg, K_FOREVER);
+		printk("ID: %d DLC: %d\r\n", rxmsg.id, rxmsg.dlc);
 
 		gpio_pin_toggle_dt(&led[idx++]); idx %= 3;
 		k_msleep(500);

@@ -1,0 +1,4 @@
+&can1 {
+    bus-speed = <1000000>;
+    bus-speed-data = <4000000>;
+};
