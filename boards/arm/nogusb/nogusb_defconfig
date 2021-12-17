@@ -20,3 +20,6 @@ CONFIG_GPIO=y
 
 # Enable Clocks
 CONFIG_CLOCK_CONTROL=y
+
+# needed to fix memcpy bug for CAN message RAM
+CONFIG_SPEED_OPTIMIZATIONS=y
