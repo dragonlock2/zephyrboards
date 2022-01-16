@@ -16,6 +16,9 @@ static void clock_init(void) {
     CLOCK_SetFroOutClkSrc(kCLOCK_FroSrcFroOsc);
     CLOCK_SetMainClkSrc(kCLOCK_MainClkSrcFro);
     CLOCK_SetCoreSysClkDiv(1U);
+
+    // IOCON used everywhere
+    CLOCK_EnableClock(kCLOCK_Iocon);
 }
 
 static int nxp_lpc84x_init(const struct device *arg) {
