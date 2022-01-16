@@ -30,4 +30,11 @@ config UART_LPC84X
 
 endif # SERIAL
 
+if GPIO
+
+config GPIO_LPC84X
+    default y
+
+endif # GPIO
+
 endif # SOC_SERIES_LPC84X

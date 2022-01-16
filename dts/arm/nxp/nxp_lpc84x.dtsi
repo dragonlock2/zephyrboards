@@ -3,6 +3,7 @@
 
 #include <dt-bindings/clock/lpc84x_clock.h>
 #include <dt-bindings/swm/lpc84x_swm.h>
+#include <dt-bindings/gpio/gpio.h>
 
 / {
     cpus {
@@ -49,6 +50,30 @@
             swmfuncs = <kSWM_USART0_TXD kSWM_USART0_RXD>;
             reg = <0x40064000 0x4000>;
             label = "UART_0";
+            status = "disabled";
+        };
+
+        gpio0: gpio@0 {
+            compatible = "nxp,lpc84x-gpio";
+            clocks = <&syscon kCLOCK_Gpio0>;
+            reg = <0xa0000000 0x4000>;
+            interrupts = <24 2>,<25 2>,<26 2>,<27 2>;
+            label = "GPIO_0";
+            gpio-controller;
+            #gpio-cells = <2>;
+            port = <0>;
+            status = "disabled";
+        };
+
+        gpio1: gpio@1 {
+            compatible = "nxp,lpc84x-gpio";
+            clocks = <&syscon kCLOCK_Gpio1>;
+            reg = <0xa0000000 0x4000>;
+            interrupts = <28 2>,<29 2>,<30 2>,<31 2>;
+            label = "GPIO_1";
+            gpio-controller;
+            #gpio-cells = <2>;
+            port = <1>;
             status = "disabled";
         };
     };
