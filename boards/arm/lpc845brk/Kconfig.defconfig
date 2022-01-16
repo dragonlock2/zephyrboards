@@ -1,0 +1,7 @@
+if BOARD_LPC845BRK
+
+# bare minimum
+config BOARD
+	default "LPC845-BRK"
+
+endif # BOARD_LPC845BRK

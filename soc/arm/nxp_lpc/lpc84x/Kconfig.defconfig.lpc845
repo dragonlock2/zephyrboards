@@ -1,0 +1,6 @@
+if SOC_LPC845
+
+config SOC
+    default "lpc845"
+
+endif # SOC_LPC845

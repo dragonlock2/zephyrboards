@@ -1,0 +1,6 @@
+if SOC_LPC844
+
+config SOC
+    default "lpc844"
+
+endif # SOC_LPC844
