@@ -2,5 +2,6 @@ menu "zephyrboards drivers"
 
 rsource "clock_control/Kconfig"
 rsource "swm/Kconfig"
+rsource "serial/Kconfig"
 
 endmenu

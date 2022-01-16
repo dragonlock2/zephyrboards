@@ -1,0 +1,10 @@
+menuconfig UART_LPC84X
+    bool "LPC84X UART driver"
+    select SERIAL_HAS_DRIVER
+    depends on SOC_SERIES_LPC84X
+    help
+      Enable driver UART in LPC84X
+
+if UART_LPC84X
+
+endif # UART_LPC84X

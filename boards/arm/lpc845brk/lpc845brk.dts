@@ -3,6 +3,7 @@
 #include <nxp/nxp_lpc845.dtsi>
 
 #include <dt-bindings/swm/lpc84x_swm.h>
+#include <dt-bindings/gpio/lpc84x_gpio.h>
 
 / {
 	model = "LPC845-BRK Development Board";
@@ -16,7 +17,8 @@
 };
 
 &uart0 {
-	// iocon-pins = <IOCON_INDEX_PIO0_25 IOCON_INDEX_PIO0_24>;
+	iocon-pins = <IOCON_INDEX_PIO0_25 IOCON_INDEX_PIO0_24>;
 	swm-pins   = <kSWM_PortPin_P0_25  kSWM_PortPin_P0_24>;
+	current-speed = <115200>;
 	status = "okay";
 };

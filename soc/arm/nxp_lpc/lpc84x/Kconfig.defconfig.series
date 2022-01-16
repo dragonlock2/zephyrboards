@@ -23,11 +23,11 @@ config SWM_LPC84X
 
 endif # SWM
 
-# if SERIAL
-# 
-# config UART_LPC84X
-#     default y
-# 
-# endif # SERIAL
+if SERIAL
+
+config UART_LPC84X
+    default y
+
+endif # SERIAL
 
 endif # SOC_SERIES_LPC84X
