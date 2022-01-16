@@ -2,12 +2,18 @@ manifest:
   remotes:
     - name: zephyrproject-rtos
       url-base: https://github.com/zephyrproject-rtos
+    - name: nxpmicro
+      url-base: https://github.com/NXPmicro
 
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
       revision: v2.7.1
       import: true
+    - name: mcux-sdk
+      remote: nxpmicro
+      revision: zephyr-module
+      path: mcuxsdk
 
   self:
     path: zephyrboards

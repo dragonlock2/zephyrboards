@@ -1,9 +1,13 @@
 # zephyrboards
-Zephyr RTOS board definitions for extra boards tested against `zephyr-v2.7.1`
+Zephyr RTOS board definitions for extra boards.
 
 ## Setup
 
-Follow https://docs.zephyrproject.org/latest/getting_started/index.html to get dependencies installed and a workspace set up. Then just clone this repo in that workspace.
+Follow https://docs.zephyrproject.org/latest/getting_started/index.html to get dependencies installed. Then create a new workspace using this repo.
+
+    west init -m https://github.com/dragonlock2/zephyrboards.git <workspace name>
+    cd <workspace name>
+    west update
 
 ## Boards
 
