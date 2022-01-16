@@ -4,13 +4,26 @@
 #include <soc.h>
 #include <linker/sections.h>
 #include <arch/cpu.h>
-#include <aarch32/cortex_m/exc.h>
+
+#include <fsl_power.h>
+#include <fsl_clock.h>
+
+static void clock_init(void) {
+    // just set to 30MHz FRO as main clock for now
+    POWER_DisablePD(kPDRUNCFG_PD_FRO_OUT);
+    POWER_DisablePD(kPDRUNCFG_PD_FRO);
+    CLOCK_SetFroOscFreq(kCLOCK_FroOscOut30M);
+    CLOCK_SetFroOutClkSrc(kCLOCK_FroSrcFroOsc);
+    CLOCK_SetMainClkSrc(kCLOCK_MainClkSrcFro);
+    CLOCK_SetCoreSysClkDiv(1U);
+}
 
 static int nxp_lpc84x_init(const struct device *arg) {
     ARG_UNUSED(arg);
     unsigned int old_level;
     old_level = irq_lock();
 
+    clock_init();
     NMI_INIT();
 
     irq_unlock(old_level);

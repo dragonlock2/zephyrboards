@@ -1,5 +1,9 @@
 #include <zephyr.h>
 
 int main() {
-    return 0;
+    volatile int8_t c = 0;
+    while (1) {
+        printk("hi! %d\r\n", c++);
+        k_msleep(10000);
+    }
 }
