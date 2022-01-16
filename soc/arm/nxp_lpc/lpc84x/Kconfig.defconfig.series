@@ -9,13 +9,6 @@ config NUM_IRQS
     # must be >= the highest interrupt number used
     default 40
 
-if SWM
-
-config SWM_LPC84X
-    default y
-
-endif # SWM
-
 if CLOCK_CONTROL
 
 config CLOCK_CONTROL_LPC84X
@@ -23,11 +16,18 @@ config CLOCK_CONTROL_LPC84X
 
 endif # CLOCK_CONTROL
 
-if SERIAL
+# if SWM
+# 
+# config SWM_LPC84X
+#     default y
+# 
+# endif # SWM
 
-config UART_LPC84X
-    default y
-
-endif # SERIAL
+# if SERIAL
+# 
+# config UART_LPC84X
+#     default y
+# 
+# endif # SERIAL
 
 endif # SOC_SERIES_LPC84X
