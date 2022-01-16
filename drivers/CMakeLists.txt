@@ -1,1 +1,2 @@
 add_subdirectory_ifdef(CONFIG_CLOCK_CONTROL clock_control)
+add_subdirectory_ifdef(CONFIG_SWM swm)

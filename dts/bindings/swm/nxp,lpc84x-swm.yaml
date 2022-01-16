@@ -1,0 +1,15 @@
+description: LPC84X SWM node
+
+compatible: "nxp,lpc84x-swm"
+
+include: [base.yaml]
+
+properties:
+    reg:
+      required: true
+
+    label:
+      required: true
+
+    clocks:
+      required: true
