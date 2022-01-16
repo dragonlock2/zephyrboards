@@ -1,0 +1,6 @@
+menu "zephyrboards"
+
+rsource "samples/Kconfig"
+rsource "drivers/Kconfig"
+
+endmenu
