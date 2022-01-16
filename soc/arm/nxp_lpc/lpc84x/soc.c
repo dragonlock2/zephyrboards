@@ -19,6 +19,9 @@ static void clock_init(void) {
 
     // IOCON used everywhere
     CLOCK_EnableClock(kCLOCK_Iocon);
+
+    // switch everything to main clock
+    CLOCK_Select(kUART0_Clk_From_MainClk);
 }
 
 static int nxp_lpc84x_init(const struct device *arg) {

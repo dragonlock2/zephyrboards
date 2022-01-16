@@ -2,6 +2,8 @@
 
 #include <nxp/nxp_lpc845.dtsi>
 
+#include <dt-bindings/swm/lpc84x_swm.h>
+
 / {
 	model = "LPC845-BRK Development Board";
 	compatible = "nxp,lpc";
@@ -14,5 +16,7 @@
 };
 
 &uart0 {
+	// iocon-pins = <IOCON_INDEX_PIO0_25 IOCON_INDEX_PIO0_24>;
+	swm-pins   = <kSWM_PortPin_P0_25  kSWM_PortPin_P0_24>;
 	status = "okay";
 };

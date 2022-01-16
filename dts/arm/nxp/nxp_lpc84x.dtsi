@@ -2,6 +2,7 @@
 #include <mem.h>
 
 #include <dt-bindings/clock/lpc84x_clock.h>
+#include <dt-bindings/swm/lpc84x_swm.h>
 
 / {
     cpus {
@@ -43,6 +44,8 @@
 
         uart0: serial@40064000 {
             compatible = "nxp,lpc84x-uart";
+            clocks = <&syscon kCLOCK_Uart0>;
+            swmfuncs = <&swm0 kSWM_USART0_TXD kSWM_USART0_RXD>;
             reg = <0x40064000 0x4000>;
             label = "UART_0";
             status = "disabled";

@@ -24,18 +24,17 @@ static int lpc84x_swm_assign(const struct device *dev,
                       swm_function_t func) {
     const struct lpc84x_swm_config *cfg = dev->config;
 
+    clock_control_on(device_get_binding(cfg->clk_dev_name),
+        (clock_control_subsys_t) cfg->clk_name);
     SWM_SetMovablePinSelect(cfg->base, 
         (swm_select_movable_t) func, (swm_port_pin_type_t) pin);
+    clock_control_off(device_get_binding(cfg->clk_dev_name),
+        (clock_control_subsys_t) cfg->clk_name);
 
     return 0;
 }
 
 static int lpc84x_swm_init(const struct device *dev) {
-    const struct lpc84x_swm_config *cfg = dev->config;
-
-    clock_control_on(device_get_binding(cfg->clk_dev_name),
-        (clock_control_subsys_t) cfg->clk_name);
-
     return 0;
 }
 
