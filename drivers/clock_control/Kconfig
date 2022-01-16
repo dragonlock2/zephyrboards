@@ -1,5 +1,10 @@
 if CLOCK_CONTROL
 
+# idk why not set
+config CLOCK_CONTROL_INIT_PRIORITY
+  int "Clock control init priority"
+  default KERNEL_INIT_PRIORITY_OBJECTS
+
 rsource "Kconfig.lpc84x"
 
 endif # CLOCK_CONTROL
