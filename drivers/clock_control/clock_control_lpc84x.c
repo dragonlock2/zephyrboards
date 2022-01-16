@@ -28,7 +28,7 @@ static int lpc84x_syscon_get_subsys_rate(const struct device *dev,
                                          clock_control_subsys_t sub_system,
                                          uint32_t *rate) {
     clock_name_t clock_name = (clock_name_t) sub_system;
-    *rate = CLOCK_GetFreq(clock_name);
+    *rate = CLOCK_GetFreq(clock_name); // TODO not right API call
     return 0;
 }
 

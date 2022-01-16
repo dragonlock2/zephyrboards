@@ -12,7 +12,7 @@
 #include <fsl_usart.h>
 #include <fsl_iocon.h>
 
-struct uart_lpc84x_config {
+struct lpc84x_uart_config {
     USART_Type *base;
     const struct device *clock_dev;
     clock_control_subsys_t clock_subsys;
@@ -26,48 +26,125 @@ struct uart_lpc84x_config {
     swm_function_t swm_func_rx;
 };
 
-struct uart_lpc84x_data {
+struct lpc84x_uart_data {
     struct uart_config uart_cfg;
 };
 
-static int uart_lpc84x_configure(const struct device *dev,
+static int lpc84x_uart_configure(const struct device *dev,
                    const struct uart_config *cfg) {
-    const struct uart_lpc84x_config *config = dev->config;
-    struct uart_lpc84x_data *data = dev->data;
+    const struct lpc84x_uart_config *config = dev->config;
+    struct lpc84x_uart_data *data = dev->data;
 
+    usart_config_t usart_config;
+    USART_GetDefaultConfig(&usart_config);
 
+    usart_config.enableTx = true;
+    usart_config.enableRx = true;
+    usart_config.baudRate_Bps = cfg->baudrate;
+
+    switch (cfg->stop_bits) {
+        case UART_CFG_STOP_BITS_1:
+            usart_config.stopBitCount = kUSART_OneStopBit;
+            break;
+        case UART_CFG_STOP_BITS_2:
+            usart_config.stopBitCount = kUSART_TwoStopBit;
+            break;
+        default:
+            return -ENOTSUP;
+    }
+
+    switch (cfg->flow_ctrl) {
+        case UART_CFG_FLOW_CTRL_NONE:
+            usart_config.enableHardwareFlowControl = false;
+            break;
+        case UART_CFG_FLOW_CTRL_RTS_CTS:
+            usart_config.enableHardwareFlowControl = true;
+            break;
+        default:
+            return -ENOTSUP;
+    }
+
+    switch (cfg->parity) {
+        case UART_CFG_PARITY_NONE:
+            usart_config.parityMode = kUSART_ParityDisabled;
+            break;
+        case UART_CFG_PARITY_EVEN:
+            usart_config.parityMode = kUSART_ParityEven;
+            break;
+        case UART_CFG_PARITY_ODD:
+            usart_config.parityMode = kUSART_ParityOdd;
+            break;
+        default:
+            return -ENOTSUP;
+    }
+
+    status_t retval = USART_Init(config->base, &usart_config,
+        CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC);
+    if (retval != kStatus_Success) {
+        return -EINVAL;
+    }
+
+    data->uart_cfg = *cfg;
 
     return 0;
 }
 
 #ifdef CONFIG_UART_USE_RUNTIME_CONFIGURE
-static int uart_lpc84x_config_get(const struct device *dev,
+static int lpc84x_uart_config_get(const struct device *dev,
                 struct uart_config *cfg) {
-    struct uart_lpc84x_data *data = dev->data;
+    struct lpc84x_uart_data *data = dev->data;
     *cfg = data->uart_cfg;
     return 0;
 }
 #endif /* CONFIG_UART_USE_RUNTIME_CONFIGURE */
 
-static int uart_lpc84x_poll_in(const struct device *dev, unsigned char *c) {
-    const struct uart_lpc84x_config *config = dev->config;
-    return 0;
+static int lpc84x_uart_poll_in(const struct device *dev, unsigned char *c) {
+    const struct lpc84x_uart_config *config = dev->config;
+    uint32_t flags = USART_GetStatusFlags(config->base);
+
+    if (flags & USART_STAT_RXRDY_MASK) {
+        *c = USART_ReadByte(config->base);
+        return 0;
+    }
+
+    return -1;
 }
 
-static void uart_lpc84x_poll_out(const struct device *dev, unsigned char c) {
-    const struct uart_lpc84x_config *config = dev->config;
+static void lpc84x_uart_poll_out(const struct device *dev, unsigned char c) {
+    const struct lpc84x_uart_config *config = dev->config;
+
+    while (!(USART_GetStatusFlags(config->base) & USART_STAT_TXRDY_MASK));
+
+    USART_WriteByte(config->base, c);
 }
 
-static int uart_lpc84x_err_check(const struct device *dev)
-{
-    const struct uart_lpc84x_config *config = dev->config;
-    return 0;
+static int lpc84x_uart_err_check(const struct device *dev) {
+    const struct lpc84x_uart_config *config = dev->config;
+
+    uint32_t flags = USART_GetStatusFlags(config->base);
+    int err = 0;
+
+    if (flags & USART_STAT_OVERRUNINT_MASK) {
+        err |= UART_ERROR_OVERRUN;
+    }
+
+    if (flags & USART_STAT_PARITYERRINT_MASK) {
+        err |= UART_ERROR_PARITY;
+    }
+
+    if (flags & USART_STAT_FRAMERRINT_MASK) {
+        err |= UART_ERROR_FRAMING;
+    }
+
+    USART_ClearStatusFlags(config->base, USART_STAT_OVERRUNINT_MASK |
+        USART_STAT_PARITYERRINT_MASK | USART_STAT_FRAMERRINT_MASK);
+
+    return err;
 }
 
-static int uart_lpc84x_init(const struct device *dev)
-{
-    const struct uart_lpc84x_config *config = dev->config;
-    struct uart_lpc84x_data *data = dev->data;
+static int lpc84x_uart_init(const struct device *dev) {
+    const struct lpc84x_uart_config *config = dev->config;
+    struct lpc84x_uart_data *data = dev->data;
     int err;
 
     // enable clock
@@ -82,7 +159,7 @@ static int uart_lpc84x_init(const struct device *dev)
     swm_assign(config->swm_tx, config->swm_pin_tx, config->swm_func_tx);
     swm_assign(config->swm_rx, config->swm_pin_rx, config->swm_func_rx);
 
-    err = uart_lpc84x_configure(dev, &data->uart_cfg);
+    err = lpc84x_uart_configure(dev, &data->uart_cfg);
     if (err != 0) {
         return err;
     }
@@ -90,18 +167,18 @@ static int uart_lpc84x_init(const struct device *dev)
     return 0;
 }
 
-static const struct uart_driver_api uart_lpc84x_driver_api = {
-    .poll_in = uart_lpc84x_poll_in,
-    .poll_out = uart_lpc84x_poll_out,
-    .err_check = uart_lpc84x_err_check,
+static const struct uart_driver_api lpc84x_uart_driver_api = {
+    .poll_in = lpc84x_uart_poll_in,
+    .poll_out = lpc84x_uart_poll_out,
+    .err_check = lpc84x_uart_err_check,
 #ifdef CONFIG_UART_USE_RUNTIME_CONFIGURE
-    .configure = uart_lpc84x_configure,
-    .config_get = uart_lpc84x_config_get,
+    .configure = lpc84x_uart_configure,
+    .config_get = lpc84x_uart_config_get,
 #endif
 };
 
-#define UART_LPC84X_DECLARE_CFG(n)                                        \
-static const struct uart_lpc84x_config uart_lpc84x_##n##_config = {       \
+#define LPC84X_UART_DECLARE_CFG(n)                                        \
+static const struct lpc84x_uart_config lpc84x_uart_##n##_config = {       \
     .base = (USART_Type *)DT_INST_REG_ADDR(n),                            \
     .clock_dev = DEVICE_DT_GET(DT_INST_CLOCKS_CTLR(n)),                   \
     .clock_subsys = (clock_control_subsys_t)DT_INST_CLOCKS_CELL(n, name), \
@@ -115,9 +192,9 @@ static const struct uart_lpc84x_config uart_lpc84x_##n##_config = {       \
     .swm_func_rx = (swm_function_t)DT_INST_PROP_BY_IDX(n, swmfuncs, 1),   \
 }
 
-#define UART_LPC84X_INIT(n)                                           \
+#define LPC84X_UART_INIT(n)                                           \
                                                                       \
-    static struct uart_lpc84x_data uart_lpc84x_##n##_data = {         \
+    static struct lpc84x_uart_data lpc84x_uart_##n##_data = {         \
         .uart_cfg = {                                                 \
             .stop_bits = UART_CFG_STOP_BITS_1,                        \
             .data_bits = UART_CFG_DATA_BITS_8,                        \
@@ -128,17 +205,17 @@ static const struct uart_lpc84x_config uart_lpc84x_##n##_config = {       \
         },                                                            \
     };                                                                \
                                                                       \
-    static const struct uart_lpc84x_config uart_lpc84x_##n##_config;  \
+    static const struct lpc84x_uart_config lpc84x_uart_##n##_config;  \
                                                                       \
     DEVICE_DT_INST_DEFINE(n,                                          \
-                &uart_lpc84x_init,                                    \
+                &lpc84x_uart_init,                                    \
                 NULL,                                                 \
-                &uart_lpc84x_##n##_data,                              \
-                &uart_lpc84x_##n##_config,                            \
+                &lpc84x_uart_##n##_data,                              \
+                &lpc84x_uart_##n##_config,                            \
                 PRE_KERNEL_1,                                         \
                 CONFIG_SERIAL_INIT_PRIORITY,                          \
-                &uart_lpc84x_driver_api);                             \
+                &lpc84x_uart_driver_api);                             \
                                                                       \
-    UART_LPC84X_DECLARE_CFG(n);
+    LPC84X_UART_DECLARE_CFG(n);
 
-DT_INST_FOREACH_STATUS_OKAY(UART_LPC84X_INIT)
+DT_INST_FOREACH_STATUS_OKAY(LPC84X_UART_INIT)
