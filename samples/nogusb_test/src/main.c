@@ -40,7 +40,7 @@ const struct zcan_filter can_filter = {
 	.id_mask  = 0
 };
 
-CAN_DEFINE_MSGQ(can_msgq, 16);
+CAN_MSGQ_DEFINE(can_msgq, 16);
 
 // app
 void btn_cb(const struct device *port, struct gpio_callback *cb, gpio_port_pins_t pins) {
@@ -96,7 +96,7 @@ int main() {
 
 	// SPI
 	struct spi_config spi_cfg = {0};
-	spi_cfg.frequency = 1000000;
+	spi_cfg.frequency = 100000;
 	spi_cfg.operation |= SPI_OP_MODE_MASTER;
 	// spi_cfg.operation |= SPI_MODE_CPOL;
 	// spi_cfg.operation |= SPI_MODE_CPHA;
@@ -149,7 +149,7 @@ int main() {
 	// CAN
 	can_set_mode(can, CAN_NORMAL_MODE);
 	// setting bitrate dynamically not working :(
-	can_attach_msgq(can, &can_msgq, &can_filter);
+	can_add_rx_filter_msgq(can, &can_msgq, &can_filter);
 
 	struct zcan_frame txmsg = {
 		.id      = 0x69,

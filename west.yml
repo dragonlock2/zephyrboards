@@ -6,12 +6,8 @@ manifest:
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
-      revision: v2.7.1
+      revision: 44462723f59ddcc0786af0b5406122476c2addf9
       import: true
-    - name: hal_nxp
-      remote: zephyrproject-rtos
-      revision: 66db7c2a57ec1adfd3574169346ed3af9bf17c0b
-      path: modules/hal/nxp
 
   self:
     path: zephyrboards

@@ -86,7 +86,8 @@ int main() {
 		}
 	}
 
-	can_configure(can_dev, CAN_NORMAL_MODE, 1000000);
+	can_set_bitrate(can_dev, 1000000, 0);
+	can_set_mode(can_dev, CAN_NORMAL_MODE);
 
 	// downclocked to 120MHz for now as workaround to get USB working
 	const struct device *cdc_dev = device_get_binding("CDC_ACM_0");

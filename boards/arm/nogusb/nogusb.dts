@@ -159,6 +159,7 @@
 
 &usart5 {
 	pinctrl-0 = <&usart5_tx_pd3 &usart5_rx_pd2>;
+	pinctrl-names = "default";
 	current-speed = <115200>;
 	status = "okay";
 };
@@ -166,33 +167,39 @@
 // supported peripherals
 zephyr_udc0: &usb {
 	pinctrl-0 = <&usb_dm_pa11 &usb_dp_pa12>;
+	pinctrl-names = "default";
 	status = "okay";
 };
 
 &adc1 {
 	pinctrl-0 = <&adc1_in1_pa1>;
+	pinctrl-names = "default";
 	status = "okay";
 };
 
 &spi2 {
 	pinctrl-0 = <&spi2_sck_pa0 &spi2_miso_pa3 &spi2_mosi_pa4>;
+	pinctrl-names = "default";
 	status = "okay";
 };
 
 &i2c2 {
 	pinctrl-0 = <&i2c2_scl_pa7 &i2c2_sda_pa6>;
+	pinctrl-names = "default";
 	status = "okay";
 	clock-frequency = <I2C_BITRATE_FAST>;
 };
 
 &dac1 {
 	pinctrl-0 = <&dac1_out2_pa5>;
+	pinctrl-names = "default";
 	status = "okay";
 };
 
 &can1 {
 	status = "okay";
 	pinctrl-0 = <&fdcan1_rx_pd0 &fdcan1_tx_pd1>;
+	pinctrl-names = "default";
 	bus-speed = <1000000>;
 	sjw = <1>;
 	sample-point = <875>;
@@ -204,6 +211,7 @@ zephyr_udc0: &usb {
 &can2 {
 	// status = "okay"; // shared interrupt, can't enable both yet
 	pinctrl-0 = <&fdcan2_rx_pb0 &fdcan2_tx_pb1>;
+	pinctrl-names = "default";
 };
 
 &rtc {

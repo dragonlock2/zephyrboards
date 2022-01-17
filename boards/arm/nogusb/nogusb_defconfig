@@ -12,14 +12,12 @@ CONFIG_UART_INTERRUPT_DRIVEN=y
 CONFIG_CONSOLE=y
 CONFIG_UART_CONSOLE=y
 
-# Pinmux Driver
+# Pinmux and Pinctrl Drivers
 CONFIG_PINMUX=y
+CONFIG_PINCTRL=y
 
 # GPIO Controller
 CONFIG_GPIO=y
 
 # Enable Clocks
 CONFIG_CLOCK_CONTROL=y
-
-# needed to fix memcpy bug for CAN message RAM
-CONFIG_SPEED_OPTIMIZATIONS=y
