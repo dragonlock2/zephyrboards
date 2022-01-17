@@ -165,7 +165,13 @@ static uint32_t get_free_isr(struct lpc84x_gpio_data *data) {
  * PINT. PINT no. is unknown, rather it's determined from ISR no.
  */
 static uint32_t attach_pin_to_isr(uint32_t port, uint32_t pin, uint32_t isr_no) {
-    return 0; // TODO use PININT?
+    uint32_t pint_idx;
+
+    pint_idx = isr_no - PIN_INT0_IRQn;
+
+    SYSCON->PINTSEL[pint_idx] = (port << 5) | pin; // from user manual
+
+    return pint_idx;
 }
 
 static void lpc84x_gpio_port_isr(const struct device *dev);
@@ -252,6 +258,8 @@ static int lpc84x_gpio_init(const struct device *dev) {
 
     // also enables clock
     GPIO_PortInit(config->gpio_base, config->port_no);
+
+    PINT_Init(config->pint_base);
 
     for (i = 0; i < 32; i++) {
         data->pint_id[i] = NO_PINT_INT;
