@@ -14,6 +14,17 @@
         zephyr,code-partition = &slot0_partition;
     };
 
+    aliases {
+        led0 = &led_red;
+        led1 = &led_green;
+        led2 = &led_blue;
+        sw0 = &user_button;
+        pwm-led0 = &led_red_pwm;
+        red-pwm-led = &led_red_pwm;
+        green-pwm-led = &led_green_pwm;
+        blue-pwm-led = &led_blue_pwm;
+    };
+
     leds {
         compatible = "gpio-leds";
         led_red: led_0 {
@@ -24,6 +35,19 @@
         };
         led_blue: led_2 {
             gpios = <&gpioa 0 GPIO_ACTIVE_LOW>;
+        };
+    };
+
+    pwmleds {
+        compatible = "pwm-leds";
+        led_red_pwm: led_red_pwm {
+            pwms = <&pwm2 3 0 PWM_POLARITY_INVERTED>;
+        };
+        led_green_pwm: led_green_pwm {
+            pwms = <&pwm2 2 0 PWM_POLARITY_INVERTED>;
+        };
+        led_blue_pwm: led_blue_pwm {
+            pwms = <&pwm2 1 0 PWM_POLARITY_INVERTED>;
         };
     };
 
@@ -92,21 +116,38 @@
 };
 
 &usart1 {
+    status = "okay";
     pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pa10>;
     pinctrl-names = "default";
     current-speed = <115200>;
-    status = "okay";
 };
 
 zephyr_udc0: &usbotg_fs {
+    status = "okay";
     pinctrl-0 = <&usb_otg_fs_dm_pa11 &usb_otg_fs_dp_pa12>;
     pinctrl-names = "default";
-    status = "okay";
 };
 
 &i2c1 {
+    status = "okay";
     pinctrl-0 = <&i2c1_scl_pb6 &i2c1_sda_pb7>;
     pinctrl-names = "default";
-    status = "okay";
     clock-frequency = <I2C_BITRATE_FAST>;
+
+    lsm6dsl@1 {
+        compatible = "st,lsm6dsl";
+        reg = <0x6a>;
+        irq-gpios = <&gpiob 8 GPIO_ACTIVE_HIGH>, <&gpiob 9 GPIO_ACTIVE_HIGH>;
+        label = "LSM6DSL_I2C";
+    };
+};
+
+&timers2 {
+    pwm2: pwm {
+        status = "okay";
+        pinctrl-0 = <&tim2_ch1_pa0 &tim2_ch2_pa1 &tim2_ch3_pa2>;
+        pinctrl-names = "default";
+    };
+
+    status = "okay";
 };
