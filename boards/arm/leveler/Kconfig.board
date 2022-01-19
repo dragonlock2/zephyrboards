@@ -1,0 +1,3 @@
+config BOARD_LEVELER
+    bool "UR@B leveler training board"
+    depends on SOC_STM32F401XE

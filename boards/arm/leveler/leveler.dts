@@ -1,0 +1,112 @@
+/dts-v1/;
+
+#include <st/f4/stm32f401Xe.dtsi>
+#include <st/f4/stm32f401c(d-e)ux-pinctrl.dtsi>
+
+/ {
+    model = "UR@B leveler training board";
+    compatible = "st,stm32f401ce", "leveler";
+
+    chosen {
+        zephyr,console = &usart1;
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+        zephyr,code-partition = &slot0_partition;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led_red: led_0 {
+            gpios = <&gpioa 2 GPIO_ACTIVE_LOW>;
+        };
+        led_green: led_1 {
+            gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+        };
+        led_blue: led_2 {
+            gpios = <&gpioa 0 GPIO_ACTIVE_LOW>;
+        };
+    };
+
+    gpio_keys {
+        compatible = "gpio-keys";
+        user_button: button {
+            gpios = <&gpioa 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+            label = "User";
+        };
+    };
+};
+
+&clk_hse {
+    clock-frequency = <DT_FREQ_M(8)>;
+    status = "okay";
+};
+
+&pll {
+    div-m = <4>;
+    mul-n = <72>;
+    div-p = <2>;
+    div-q = <3>;
+    clocks = <&clk_hse>;
+    status = "okay";
+};
+
+&rcc {
+    clocks = <&pll>;
+    clock-frequency = <DT_FREQ_M(72)>;
+    ahb-prescaler = <1>;
+    apb1-prescaler = <2>;
+    apb2-prescaler = <1>;
+};
+
+&flash0 {
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+        boot_partition: partition@0 {
+            label = "mcuboot";
+            reg = <0x00000000 0x00010000>;
+            read-only;
+        };
+        slot0_partition: partition@20000 {
+            label = "image-0";
+            reg = <0x00020000 0x00020000>;
+        };
+        slot1_partition: partition@40000 {
+            label = "image-1";
+            reg = <0x00040000 0x00020000>;
+        };
+        scratch_partition: partition@60000 {
+            label = "image-scratch";
+            reg = <0x00060000 0x00020000>;
+        };
+    };
+};
+
+&rtc {
+    status = "okay";
+};
+
+&wwdg {
+    status = "okay";
+};
+
+&usart1 {
+    pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pa10>;
+    pinctrl-names = "default";
+    current-speed = <115200>;
+    status = "okay";
+};
+
+zephyr_udc0: &usbotg_fs {
+    pinctrl-0 = <&usb_otg_fs_dm_pa11 &usb_otg_fs_dp_pa12>;
+    pinctrl-names = "default";
+    status = "okay";
+};
+
+&i2c1 {
+    pinctrl-0 = <&i2c1_scl_pb6 &i2c1_sda_pb7>;
+    pinctrl-names = "default";
+    status = "okay";
+    clock-frequency = <I2C_BITRATE_FAST>;
+};
