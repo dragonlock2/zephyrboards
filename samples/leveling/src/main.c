@@ -95,6 +95,15 @@ int main() {
     // enable usb console
     usb_enable(NULL);
 
+    // do a little flash
+    set_rgb(1, 0, 0);
+    k_msleep(50);
+    set_rgb(0, 1, 0);
+    k_msleep(50);
+    set_rgb(0, 0, 1);
+    k_msleep(50);
+    set_rgb(0, 0, 0);
+
     // configure button
     gpio_pin_configure_dt(&btn, GPIO_INPUT);
     gpio_pin_interrupt_configure_dt(&btn, GPIO_INT_EDGE_TO_ACTIVE);
