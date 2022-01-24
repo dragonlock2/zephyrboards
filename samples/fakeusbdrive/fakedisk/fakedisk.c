@@ -9,8 +9,6 @@
 
 LOG_MODULE_REGISTER(fakedisk, CONFIG_LOG_DEFAULT_LEVEL);
 
-#define SECTOR_SIZE 512 // most compatible value
-
 static int disk_fake_access_init(struct disk_info *disk) {
     return 0;
 }
@@ -23,10 +21,14 @@ static int disk_fake_access_read(struct disk_info *disk, uint8_t *buff,
                                  uint32_t sector, uint32_t count) {
     if (sector == 0 && count == 1) {
         memcpy(buff, &MBR, SECTOR_SIZE);
-        return 0;
+    } else if (sector == 1 && count == 1) {
+        memcpy(buff, &FAT32_BOOT, SECTOR_SIZE);
+    } else {
+        printk("no! sector: %u count: %u\r\n", sector, count);
+        return -EIO;
     }
 
-    return -EIO;
+    return 0;
 }
 
 static int disk_fake_access_write(struct disk_info *disk, const uint8_t *buff,
