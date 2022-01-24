@@ -25,8 +25,11 @@ static int disk_fake_access_read(struct disk_info *disk, uint8_t *buff,
         memcpy(buff, &FAT32_BOOT, SECTOR_SIZE);
     } else if (sector == 2 && count == 1) {
         memcpy(buff, &FAT32_FSINFO, SECTOR_SIZE);
+    } else if (sector == 33 && count == 1) {
+        memcpy(buff, &FAT32_ROOT_TABLE, SECTOR_SIZE);
+    } else if (sector == 34 && count == 1) {
+        memcpy(buff, &FAT32_ROOTDIR, SECTOR_SIZE);
     } else {
-        printk("no! sector: %u count: %u\r\n", sector, count);
         return -EIO;
     }
 

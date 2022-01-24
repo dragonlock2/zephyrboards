@@ -76,7 +76,7 @@ static const fat32_boot_t FAT32_BOOT = {
     .bytes_per_sector = SECTOR_SIZE,
     .sectors_per_cluster = 64,
     .num_rsvd_sectors = 32,
-    .num_fat_copies = 2,
+    .num_fat_copies = 1,
     .num_root_dir_ent = 0,
     .num_sectors = 0,
     .media_descriptor = 0xf8,
@@ -85,7 +85,7 @@ static const fat32_boot_t FAT32_BOOT = {
     .num_heads = 255,
     .num_hidden_sectors = 1,
     .num_sectors_fat32 = CONFIG_DISK_FAKE_SECTOR_COUNT-1,
-    .sectors_per_fat32 = 0x3a6c, // TODO try diff number?
+    .sectors_per_fat32 = 1,
     .mirror_flags = 0,
     .version = 0,
     .root_dir_first_cluster = 2,
@@ -114,13 +114,58 @@ typedef struct {
 static const fat32_fsinfo_t FAT32_FSINFO = {
     .sig1 = 0x41615252,
     .sig2 = 0x61417272,
-    .free_clusters = 0xffffffff,
-    .next_free_cluster = 0xffffffff,
+    .free_clusters = CONFIG_DISK_FAKE_SECTOR_COUNT / 64 - 1,
+    .next_free_cluster = 3,
     .sig3 = 0xaa550000,
 };
 
-// FAT32 Directory
+// FAT32 Table
 
+typedef struct {
+    uint32_t entries[128];
+} __attribute__((__packed__)) fat32_table_t;
 
+static const fat32_table_t FAT32_ROOT_TABLE = {
+    .entries = {
+        0x0ffffff8,
+        0x0fffffff,
+        0x0fffffff,
+    },
+};
+
+// FAT32 Directory/Entry
+
+typedef struct {
+    uint8_t filename[8];
+    uint8_t file_ext[3];
+    uint8_t attributes;
+    uint8_t rsvd1;
+    uint8_t creation_time_ms;
+    uint16_t creation_time;
+    uint16_t creation_date;
+    uint16_t access_date;
+    uint16_t first_cluster_high;
+    uint16_t mod_time;
+    uint16_t mod_date;
+    uint16_t first_cluster_low;
+    uint32_t filesize;
+} __attribute__((__packed__)) fat32_dirent_t;
+
+static const fat32_dirent_t FAT32_ROOTDIR[16] = {
+    {
+        .filename = {0x00, ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+        .file_ext = {' ', ' ', ' '},
+        .attributes = 0x08, // VOLUME LABEL
+        .creation_time_ms = 0,
+        .creation_time = 0,
+        .creation_date = 0,
+        .access_date = 0,
+        .first_cluster_high = 0,
+        .first_cluster_low = 0,
+        .mod_time = 0,
+        .mod_date = 0,
+        .filesize = 0,
+    },
+};
 
 #endif // FAKEDISK_H
