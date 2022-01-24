@@ -88,7 +88,7 @@ static const fat32_boot_t FAT32_BOOT = {
     .sectors_per_fat32 = 0x3a6c, // TODO try diff number?
     .mirror_flags = 0,
     .version = 0,
-    .root_dir_first_cluster = 2, // TODO change values
+    .root_dir_first_cluster = 2,
     .fsinfo_sector_num = 1,
     .backup_boot_sector = 0,
     .physical_drive_num = 0x80,
@@ -100,5 +100,27 @@ static const fat32_boot_t FAT32_BOOT = {
 };
 
 // FAT32 FS Info Sector
+
+typedef struct {
+    uint32_t sig1;
+    uint8_t rsvd1[480];
+    uint32_t sig2;
+    uint32_t free_clusters;
+    uint32_t next_free_cluster;
+    uint8_t rsvd2[12];
+    uint32_t sig3;
+} __attribute__((__packed__)) fat32_fsinfo_t;
+
+static const fat32_fsinfo_t FAT32_FSINFO = {
+    .sig1 = 0x41615252,
+    .sig2 = 0x61417272,
+    .free_clusters = 0xffffffff,
+    .next_free_cluster = 0xffffffff,
+    .sig3 = 0xaa550000,
+};
+
+// FAT32 Directory
+
+
 
 #endif // FAKEDISK_H
