@@ -4,16 +4,12 @@ config DISK_DRIVER_FAKE
 if DISK_DRIVER_FAKE
 
 config DISK_FAKE_VOLUME_NAME
-    string "Fake disk mount point or drive name"
+    string "Fake disk mount point or drive name (FATFS needs existing ones)"
     default "FAKE"
-
-config DISK_FAKE_SECTOR_SIZE
-    int "Fake disk sector size in bytes"
-    default 512
 
 config DISK_FAKE_SECTOR_COUNT
     int "Fake disk number of sectors"
-    default 512
+    default 4294967295
 
 module = FAKEDISK
 module-str = fakedisk

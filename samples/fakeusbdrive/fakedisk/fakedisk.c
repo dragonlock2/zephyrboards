@@ -3,7 +3,13 @@
 #include <drivers/disk.h>
 #include <logging/log.h>
 
+#include "fakedisk.h"
+
+// inspired by drivers/disk/ramdisk.c
+
 LOG_MODULE_REGISTER(fakedisk, CONFIG_LOG_DEFAULT_LEVEL);
+
+#define SECTOR_SIZE 512 // most compatible value
 
 static int disk_fake_access_init(struct disk_info *disk) {
     return 0;
@@ -15,7 +21,12 @@ static int disk_fake_access_status(struct disk_info *disk) {
 
 static int disk_fake_access_read(struct disk_info *disk, uint8_t *buff,
                                  uint32_t sector, uint32_t count) {
-    return 0; // TODO make FAT32
+    if (sector == 0 && count == 1) {
+        memcpy(buff, &MBR, SECTOR_SIZE);
+        return 0;
+    }
+
+    return -EIO;
 }
 
 static int disk_fake_access_write(struct disk_info *disk, const uint8_t *buff,
@@ -32,7 +43,7 @@ static int disk_fake_access_ioctl(struct disk_info *disk, uint8_t cmd,
             *(uint32_t *)buff = CONFIG_DISK_FAKE_SECTOR_COUNT;
             break;
         case DISK_IOCTL_GET_SECTOR_SIZE:
-            *(uint32_t *)buff = CONFIG_DISK_FAKE_SECTOR_SIZE;
+            *(uint32_t *)buff = SECTOR_SIZE;
             break;
         case DISK_IOCTL_GET_ERASE_BLOCK_SZ:
             *(uint32_t *)buff = 1U;
