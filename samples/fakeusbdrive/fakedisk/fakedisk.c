@@ -19,18 +19,25 @@ static int disk_fake_access_status(struct disk_info *disk) {
 
 static int disk_fake_access_read(struct disk_info *disk, uint8_t *buff,
                                  uint32_t sector, uint32_t count) {
-    if (sector == 0 && count == 1) {
+    if (count != 1) {
+        return -EIO;
+    }
+
+    if (sector == 0) {
         memcpy(buff, &MBR, SECTOR_SIZE);
-    } else if (sector == 1 && count == 1) {
+    } else if (sector == 1) {
         memcpy(buff, &FAT32_BOOT, SECTOR_SIZE);
-    } else if (sector == 2 && count == 1) {
+    } else if (sector == 2) {
         memcpy(buff, &FAT32_FSINFO, SECTOR_SIZE);
-    } else if (sector == 33 && count == 1) {
+    } else if (sector == 33 || sector == 33 + SECTORS_PER_FAT) {
         memcpy(buff, &FAT32_ROOT_TABLE, SECTOR_SIZE);
-    } else if (sector == 34 && count == 1) {
+    } else if (sector < 33 + 2 * SECTORS_PER_FAT) {
+        memcpy(buff, &FAT32_TABLE, SECTOR_SIZE);
+    } else if (sector >= (33 + 2 * SECTORS_PER_FAT)) {
         memcpy(buff, &FAT32_ROOTDIR, SECTOR_SIZE);
     } else {
-        return -EIO;
+        printk("no! %d %d\r\n", sector, count);
+        memset(buff, 0, SECTOR_SIZE);
     }
 
     return 0;
@@ -47,7 +54,7 @@ static int disk_fake_access_ioctl(struct disk_info *disk, uint8_t cmd,
         case DISK_IOCTL_CTRL_SYNC:
             break;
         case DISK_IOCTL_GET_SECTOR_COUNT:
-            *(uint32_t *)buff = CONFIG_DISK_FAKE_SECTOR_COUNT;
+            *(uint32_t *)buff = SECTOR_COUNT;
             break;
         case DISK_IOCTL_GET_SECTOR_SIZE:
             *(uint32_t *)buff = SECTOR_SIZE;

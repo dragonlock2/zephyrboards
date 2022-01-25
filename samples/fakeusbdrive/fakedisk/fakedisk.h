@@ -3,7 +3,10 @@
 
 #include <zephyr.h>
 
-#define SECTOR_SIZE 512 // most compatible value
+#define SECTOR_COUNT CONFIG_DISK_FAKE_SECTOR_COUNT
+#define SECTORS_PER_FAT (SECTOR_COUNT / 64 / 128)
+
+#define SECTOR_SIZE 512
 
 // MBR
 
@@ -30,7 +33,7 @@ static const mbr_t MBR = {
             .partition_type = 0x0b,
             .chs_last = {0xfe, 0xff, 0xff},
             .lba_first = 1,
-            .num_sectors = CONFIG_DISK_FAKE_SECTOR_COUNT-1
+            .num_sectors = SECTOR_COUNT-1
         }
     },
     .boot_sig = 0xaa55,
@@ -76,7 +79,7 @@ static const fat32_boot_t FAT32_BOOT = {
     .bytes_per_sector = SECTOR_SIZE,
     .sectors_per_cluster = 64,
     .num_rsvd_sectors = 32,
-    .num_fat_copies = 1,
+    .num_fat_copies = 2,
     .num_root_dir_ent = 0,
     .num_sectors = 0,
     .media_descriptor = 0xf8,
@@ -84,8 +87,8 @@ static const fat32_boot_t FAT32_BOOT = {
     .sectors_per_track = 32,
     .num_heads = 255,
     .num_hidden_sectors = 1,
-    .num_sectors_fat32 = CONFIG_DISK_FAKE_SECTOR_COUNT-1,
-    .sectors_per_fat32 = 1,
+    .num_sectors_fat32 = SECTOR_COUNT-1,
+    .sectors_per_fat32 = SECTORS_PER_FAT,
     .mirror_flags = 0,
     .version = 0,
     .root_dir_first_cluster = 2,
@@ -114,8 +117,8 @@ typedef struct {
 static const fat32_fsinfo_t FAT32_FSINFO = {
     .sig1 = 0x41615252,
     .sig2 = 0x61417272,
-    .free_clusters = CONFIG_DISK_FAKE_SECTOR_COUNT / 64 - 1,
-    .next_free_cluster = 3,
+    .free_clusters = 0xffffffff,
+    .next_free_cluster = 0xffffffff,
     .sig3 = 0xaa550000,
 };
 
@@ -131,6 +134,10 @@ static const fat32_table_t FAT32_ROOT_TABLE = {
         0x0fffffff,
         0x0fffffff,
     },
+};
+
+static const fat32_table_t FAT32_TABLE = {
+    .entries = {0}
 };
 
 // FAT32 Directory/Entry
