@@ -1,0 +1,3 @@
+config BOARD_6WIRE
+    bool "6wire"
+    depends on SOC_PART_NUMBER_SAMD21G18A

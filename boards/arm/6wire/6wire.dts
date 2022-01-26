@@ -1,0 +1,112 @@
+/dts-v1/;
+#include <atmel/samd21.dtsi>
+
+/ {
+    model = "6wire";
+    compatible = "atmel,samd21g18a", "atmel,samd21";
+
+    chosen {
+        zephyr,console = &sercom5;
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+    };
+
+    aliases {
+        led0 = &led_red;
+        led1 = &led_green;
+        led2 = &led_blue;
+        sw0 = &user_btn;
+        pwm-led0 = &led_red_pwm;
+        red-pwm-led = &led_red_pwm;
+        green-pwm-led = &led_green_pwm;
+        blue-pwm-led = &led_blue_pwm;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led_red: led_0 {
+            gpios = <&porta 10 GPIO_ACTIVE_LOW>;
+        };
+        led_green: led_1 {
+            gpios = <&porta 9 GPIO_ACTIVE_LOW>;
+        };
+        led_blue: led_2 {
+            gpios = <&porta 8 GPIO_ACTIVE_LOW>;
+        };
+
+        mux_a0: mux_a0 {
+            gpios = <&porta 2 0>;
+        };
+        mux_a1: mux_a1 {
+            gpios = <&porta 3 0>;
+        };
+    };
+
+    pwmleds {
+        compatible = "pwm-leds";
+        led_red_pwm: led_red_pwm {
+            pwms = <&tcc0 2>;
+        };
+        led_green_pwm: led_green_pwm {
+            pwms = <&tcc0 1>;
+        };
+        led_blue_pwm: led_blue_pwm {
+            pwms = <&tcc0 0>;
+        };
+    };
+
+    buttons {
+        compatible = "gpio-keys";
+        user_btn: button {
+            gpios = <&porta 12 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            label = "User";
+        };
+        drdy: drdy {
+            gpios = <&porta 4 0>;
+            label = "ADC DRDY";
+        };
+    };
+};
+
+// mod flash and SRAM for samd21g16a (bug in hal_atmel and dts)
+&flash0 {
+    reg = <0 0x10000>; // 64KB
+};
+
+&sram0 {
+    reg = <0x20000000 0x2000>; // 8KB
+};
+
+&cpu0 {
+    clock-frequency = <48000000>;
+};
+
+&sercom5 {
+    status = "okay";
+    compatible = "atmel,sam0-uart";
+    current-speed = <115200>;
+    rxpo = <1>;
+    txpo = <0>;
+
+    pinctrl-0 = <&pb3d_sercom5_pad1 &pb2d_sercom5_pad0>;
+};
+
+&tcc0 {
+    status = "okay";
+    compatible = "atmel,sam0-tcc-pwm";
+    /* Gives a maximum period of 1.4s */
+    prescaler = <4>;
+    #pwm-cells = <1>;
+};
+
+zephyr_udc0: &usb0 {
+    status = "okay";
+};
+
+&sercom4 {
+    status = "okay";
+    compatible = "atmel,sam0-i2c";
+    clock-frequency = <I2C_BITRATE_FAST>;
+    #address-cells = <1>;
+    #size-cells = <0>;
+};
