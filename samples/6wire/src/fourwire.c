@@ -4,19 +4,14 @@
 #include <math.h>
 #include <stdlib.h>
 
-K_THREAD_STACK_DEFINE(fourwire_stack_area, 1024);
-static struct k_thread fourwire_thread_data;
-
-K_MSGQ_DEFINE(fourwire_msgq, sizeof(fourwire_config_t*), 8, 4);
-
 void fourwire_init(fourwire_config_t *cfg) {
     // mux setup
     for (int i = 0; i < cfg->num_mux_pins; i++) {
         gpio_pin_configure_dt(&cfg->mux_pins[i], GPIO_OUTPUT_INACTIVE);
     }
 
-    cfg->best_idx = cfg->num_ref_vals - 1;
-    fourwire_set_ref(cfg, cfg->best_idx);
+    cfg->curr_ref = cfg->num_ref_vals - 1;
+    fourwire_set_ref(cfg, cfg->curr_ref);
 
     // ADC setup
     uint8_t cmd = 0x06; // RESET
@@ -30,21 +25,26 @@ void fourwire_init(fourwire_config_t *cfg) {
     // IDACs disabled
     i2c_reg_write_byte(cfg->adc_i2c, cfg->adc_addr, 0x4c, 0x00);
 
+    cfg->curr_gain = 0; // 1x gain
+    fourwire_set_gain(cfg, cfg->curr_gain);
+
     gpio_pin_configure_dt(cfg->adc_drdy, GPIO_INPUT);
     gpio_pin_interrupt_configure_dt(cfg->adc_drdy, GPIO_INT_EDGE_TO_ACTIVE);
     gpio_init_callback(&cfg->adc_cb, fourwire_trigger, BIT(cfg->adc_drdy->pin));
     gpio_add_callback(cfg->adc_drdy->port, &cfg->adc_cb);
 
-    // private state
+    // moving average init
     cfg->num_mvg_avg  = 10;
     cfg->mvg_avg_vals = calloc(cfg->num_mvg_avg, sizeof(double));
     cfg->mvg_avg_nxt  = -1;
 
-    k_thread_create(&fourwire_thread_data, fourwire_stack_area,
-                    K_THREAD_STACK_SIZEOF(fourwire_stack_area),
-                    fourwire_process, NULL, NULL, NULL,
-                    3, 0, K_NO_WAIT);
-    k_thread_start(&fourwire_thread_data);
+    // start process thread
+    k_sem_init(&cfg->adc_pending, 0, 1);
+
+    k_thread_create(&cfg->thread_data, cfg->thread_stack, cfg->thread_stack_size,
+                    fourwire_process, cfg, NULL, NULL,
+                    K_PRIO_PREEMPT(0), 0, K_NO_WAIT);
+    k_thread_start(&cfg->thread_data);
 
     // start readings
     cmd = 0x08; // START/SYNC
@@ -59,6 +59,13 @@ void fourwire_set_ref(fourwire_config_t *cfg, int idx) {
     for (int i = 0; i < cfg->num_mux_pins; i++) {
         gpio_pin_set_dt(&cfg->mux_pins[i], idx & (1 << i));
     }
+}
+
+void fourwire_set_gain(fourwire_config_t *cfg, int gain) {
+    uint8_t old;
+    i2c_reg_read_byte(cfg->adc_i2c, cfg->adc_addr, 0x20, &old);
+    old = (old & 0xf1) | (gain << 1);
+    i2c_reg_write_byte(cfg->adc_i2c, cfg->adc_addr, 0x40, old);
 }
 
 int32_t fourwire_read_adc(fourwire_config_t *cfg) {
@@ -76,35 +83,50 @@ int32_t fourwire_read_adc(fourwire_config_t *cfg) {
 void fourwire_trigger(const struct device *port, 
                       struct gpio_callback *cb, gpio_port_pins_t pins) {
     fourwire_config_t *cfg = CONTAINER_OF(cb, fourwire_config_t, adc_cb);
-    while (k_msgq_put(&fourwire_msgq, &cfg, K_NO_WAIT) != 0) {
-        k_msgq_purge(&fourwire_msgq);
-    }
+    k_sem_give(&cfg->adc_pending);
 }
 
 void fourwire_process(void* p1, void* p2, void* p3) {
-    // TODO PGA?
-    // TODO offset calibration?
+    // TODO guard workaround (two selectable modes)
+        // measure refp-refn with 2.048v reference (gives current)
+        // then measure resistor and divide (gives voltage)
 
-    fourwire_config_t *cfg;
+    fourwire_config_t *cfg = (fourwire_config_t*) p1;
     double res;
     int32_t val;
 
     while (1) {
-        k_msgq_get(&fourwire_msgq, &cfg, K_FOREVER); // wait!
-
+        k_sem_take(&cfg->adc_pending, K_FOREVER);
         val = fourwire_read_adc(cfg);
 
-        if (val == 0x7fffff) { // resistance too big
+        if (val == 0x7fffff) {
             res = INFINITY;
-            if (cfg->best_idx < cfg->num_ref_vals - 1) {
-                cfg->best_idx++;
-                cfg->mvg_avg_nxt = -1;
+            if (cfg->curr_gain != 0) { // wrong gain?
+                cfg->curr_gain = 0;
+            } else if (cfg->curr_ref < cfg->num_ref_vals - 1) { // wrong ref?
+                cfg->curr_ref++;
+                cfg->curr_gain = 0;
             }
-        } else { // works, but can do better with smaller ref?
-            res = val * cfg->ref_vals[cfg->best_idx] / 0x7fffff;
-            if (cfg->best_idx > 0 && res < 0.9 * cfg->ref_vals[cfg->best_idx - 1]) {
-                cfg->best_idx--;
+            cfg->mvg_avg_nxt = -1;
+        } else {
+            res = val * cfg->ref_vals[cfg->curr_ref] / 
+                    (0x7fffff * (1 << cfg->curr_gain));
+
+            if (cfg->curr_ref > 0 && 
+                    res < 0.9 * cfg->ref_vals[cfg->curr_ref - 1]) { // better ref?
+                cfg->curr_ref--;
+                cfg->curr_gain = 0;
                 cfg->mvg_avg_nxt = -1;
+            } else { // better gain?
+                uint32_t gain = (0x7fffff * (1 << cfg->curr_gain)) / val * 0.9;
+                if      (gain >= 128) { cfg->curr_gain = 7; }
+                else if (gain >= 64)  { cfg->curr_gain = 6; }
+                else if (gain >= 32)  { cfg->curr_gain = 5; }
+                else if (gain >= 16)  { cfg->curr_gain = 4; }
+                else if (gain >= 8)   { cfg->curr_gain = 3; }
+                else if (gain >= 4)   { cfg->curr_gain = 2; }
+                else if (gain >= 2)   { cfg->curr_gain = 1; }
+                else                  { cfg->curr_gain = 0; }
             }
 
             // moving average computations
@@ -125,7 +147,8 @@ void fourwire_process(void* p1, void* p2, void* p3) {
             }
         }
 
-        fourwire_set_ref(cfg, cfg->best_idx);
+        fourwire_set_ref(cfg, cfg->curr_ref);
+        fourwire_set_gain(cfg, cfg->curr_gain);
         cfg->resistance = res;
     }
 }

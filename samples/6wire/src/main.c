@@ -41,6 +41,8 @@ void set_rgb(double r, double g, double b) {
 }
 
 // app
+K_THREAD_STACK_DEFINE(fourwire_stack_area, 512);
+
 int main() {
     set_rgb(0.01, 0.01, 0.01);
     gpio_pin_configure_dt(&btn, GPIO_INPUT);
@@ -59,12 +61,30 @@ int main() {
         .adc_i2c = i2c,
         .adc_drdy = &drdy,
         .adc_addr = 0x40,
+
+        .thread_stack = fourwire_stack_area,
+        .thread_stack_size = K_THREAD_STACK_SIZEOF(fourwire_stack_area),
     };
     fourwire_init(&fourwire_cfg);
 
     while (1) {
-        // TODO special print with prefixed units?
-        printk("%f Ω\r\n", fourwire_read(&fourwire_cfg));
+        // TODO usb console? but ram :(
+
+        double val = fourwire_read(&fourwire_cfg);
+
+        printk("%d %d ", fourwire_cfg.curr_ref, 1 << fourwire_cfg.curr_gain);
+
+        if (val < 1.0) {
+            printk("%f mΩ\r\n", val * 1000.0);
+        } else if (val < 1000.0) {
+            printk("%f Ω\r\n", val);
+        } else if (val < 1000000.0) {
+            printk("%f kΩ\r\n", val / 1000.0);
+        } else if (val < INFINITY) {
+            printk("%f MΩ\r\n", val / 1000000.0);
+        } else {
+            printk("%f Ω\r\n", val);
+        }
         k_msleep(100);
     }
 }

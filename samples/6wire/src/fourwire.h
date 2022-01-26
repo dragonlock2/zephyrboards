@@ -15,8 +15,12 @@ typedef struct {
     const struct gpio_dt_spec *adc_drdy;
     const uint8_t adc_addr;
 
+    k_thread_stack_t *thread_stack;
+    size_t thread_stack_size;
+
     // private vars
-    int best_idx;
+    int curr_ref;
+    int curr_gain; // stored as log2(gain)
     double resistance;
 
     double *mvg_avg_vals;
@@ -24,7 +28,8 @@ typedef struct {
     int mvg_avg_nxt;
 
     struct gpio_callback adc_cb;
-
+    struct k_sem adc_pending;
+    struct k_thread thread_data;
 } fourwire_config_t;
 
 // public functions
@@ -33,6 +38,7 @@ double fourwire_read(fourwire_config_t *cfg);
 
 // "private" helpers
 void fourwire_set_ref(fourwire_config_t *cfg, int idx);
+void fourwire_set_gain(fourwire_config_t *cfg, int gain);
 int32_t fourwire_read_adc(fourwire_config_t *cfg);
 void fourwire_trigger(const struct device *port, 
                       struct gpio_callback *cb, gpio_port_pins_t pins);
