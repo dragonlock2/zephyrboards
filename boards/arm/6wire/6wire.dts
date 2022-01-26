@@ -62,7 +62,7 @@
             label = "User";
         };
         drdy: drdy {
-            gpios = <&porta 4 0>;
+            gpios = <&porta 4 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
             label = "ADC DRDY";
         };
     };
