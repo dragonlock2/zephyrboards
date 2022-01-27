@@ -1,6 +1,7 @@
 #include <zephyr.h>
 #include <drivers/gpio.h>
 #include <drivers/pwm.h>
+#include <usb/usb_device.h>
 #include <math.h>
 
 #include "fourwire.h"
@@ -41,9 +42,11 @@ void set_rgb(double r, double g, double b) {
 }
 
 // app
-K_THREAD_STACK_DEFINE(fourwire_stack_area, 512);
+K_THREAD_STACK_DEFINE(fourwire_stack_area, 320);
 
 int main() {
+    usb_enable(NULL);
+
     set_rgb(0.01, 0.01, 0.01);
     gpio_pin_configure_dt(&btn, GPIO_INPUT);
 
@@ -68,11 +71,7 @@ int main() {
     fourwire_init(&fourwire_cfg);
 
     while (1) {
-        // TODO usb console? but ram :(
-
         double val = fourwire_read(&fourwire_cfg);
-
-        printk("%d %d ", fourwire_cfg.curr_ref, 1 << fourwire_cfg.curr_gain);
 
         if (val < 1.0) {
             printk("%f mΩ\r\n", val * 1000.0);

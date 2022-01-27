@@ -87,13 +87,9 @@ void fourwire_trigger(const struct device *port,
 }
 
 void fourwire_process(void* p1, void* p2, void* p3) {
-    // TODO guard workaround (two selectable modes)
-        // measure refp-refn with 2.048v reference (gives current)
-        // then measure resistor and divide (gives voltage)
-
     fourwire_config_t *cfg = (fourwire_config_t*) p1;
-    double res;
     int32_t val;
+    double res;
 
     while (1) {
         k_sem_take(&cfg->adc_pending, K_FOREVER);
