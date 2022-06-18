@@ -1,6 +1,5 @@
 #include <zephyr.h>
 #include <drivers/gpio.h>
-#include <drivers/sensor.h>
 #include <drivers/counter.h>
 #include <drivers/i2c.h>
 #include <drivers/can.h>
@@ -18,8 +17,6 @@ const struct gpio_dt_spec led[] = {
 
 const struct gpio_dt_spec btn = GPIO_DT_SPEC_GET(DT_NODELABEL(user_button), gpios);
 struct gpio_callback btn_cb_data;
-
-const struct device *temp_dev = DEVICE_DT_GET(DT_NODELABEL(temp0));
 
 const struct device *counter_dev = DEVICE_DT_GET(DT_NODELABEL(rtc));
 
@@ -86,8 +83,8 @@ int main() {
 		}
 	}
 
-	can_set_bitrate(can_dev, 1000000, 0);
-	can_set_mode(can_dev, CAN_NORMAL_MODE);
+	can_set_bitrate(can_dev, 1000000);
+	can_set_mode(can_dev, CAN_MODE_NORMAL);
 
 	// downclocked to 120MHz for now as workaround to get USB working
 	const struct device *cdc_dev = device_get_binding("CDC_ACM_0");
@@ -97,22 +94,24 @@ int main() {
 	while (1) {
 		gpio_pin_toggle_dt(&led[idx++]); idx %= 3;
 
-		sensor_sample_fetch(temp_dev);
-		struct sensor_value temp_val;
-		sensor_channel_get(temp_dev, SENSOR_CHAN_DIE_TEMP, &temp_val);
-
 		uint32_t ticks;
 		counter_get_value(counter_dev, &ticks);
 
-		// can_write(can_dev, (uint8_t*) &ticks, 4, 0x69, CAN_DATAFRAME, K_FOREVER);
+		struct zcan_frame txmsg = {
+			.id      = 0x69,
+			.id_type = CAN_STANDARD_IDENTIFIER,
+			.rtr     = CAN_DATAFRAME,
+			.dlc     = can_bytes_to_dlc(sizeof(ticks)),
+		};
+		memcpy(txmsg.data, &ticks, sizeof(ticks));
+		can_send(can_dev, &txmsg, K_FOREVER, NULL, NULL);
 
-		printk("Hello World! %.3fC %u %d %d %d\r\n",
-			sensor_value_to_double(&temp_val),
+		printk("Hello World! %u %d %d %d\r\n",
 			ticks,
 			gpio_pin_get_dt(&sddet),
 			gpio_pin_get_dt(&usb0_id),
 			gpio_pin_get_dt(&usb1_id));
-		k_msleep(1000);
+		k_msleep(10000);
 	}
 
 	return 0;

@@ -1,6 +1,7 @@
 /dts-v1/;
 
-#include <nxp/MK66FN2M0VMD18.dtsi>
+#include <nxp/nxp_k6x.dtsi>
+#include "k66f_breakout-pinctrl.dtsi"
 
 / {
 	// bare minimum
@@ -133,7 +134,8 @@
 &uart0 {
 	status = "okay";
 	current-speed = <115200>;
-	pinctrl-0 = <&UART0_RX_PTB16 &UART0_TX_PTB17>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-names = "default";
 };
 
 // supported peripherals
@@ -147,57 +149,53 @@
 
 &spi0 {
 	status = "okay";
-	pinctrl-0 = <&SPI0_SCK_PTC5 &SPI0_SOUT_PTC6 &SPI0_SIN_PTC7>;
-
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-names = "default";
 	cs-gpios = <&gpioc 4 GPIO_ACTIVE_LOW>;
 };
 
 &spi1 {
 	status = "okay";
-	pinctrl-0 = <&SPI1_SCK_PTE2 &SPI1_SOUT_PTE3 &SPI1_SIN_PTE1>;
+	pinctrl-0 = <&spi1_default>;
+	pinctrl-names = "default";
+	cs-gpios = <&gpioe 4 GPIO_ACTIVE_HIGH>;
 
-	cs-gpios = <&gpioe 4 GPIO_ACTIVE_LOW>;
-
+	/* TODO get working */
 	sdhc0: sdhc@0 {
-		compatible = "zephyr,mmc-spi-slot";
+		compatible = "zephyr,sdhc-spi-slot";
 		reg = <0>;
 		status = "okay";
-		label = "SDHC0";
+		label = "SDHC_0";
 		spi-max-frequency = <24000000>;
+		mmc {
+			compatible = "zephyr,sdmmc-disk";
+			status = "okay";
+			label = "SDMMC_0";
+		};
 	};
 };
 
 &i2c0 {
 	status = "okay";
-	pinctrl-0 = <&I2C0_SCL_PTD8 &I2C0_SDA_PTD9>;
-	clock-frequency = <I2C_BITRATE_FAST_PLUS>;
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-names = "default";
 };
 
 &flexcan0 {
 	status = "okay";
-	pinctrl-0 = <&CAN0_TX_PTB18 &CAN0_RX_PTB19>;
+	pinctrl-0 = <&flexcan0_default>;
+	pinctrl-names = "default";
 	bus-speed = <125000>;
 };
 
-&CAN0_RX_PTB19 {
-	bias-pull-up;
-};
-
 zephyr_udc0: &usbotg {
+	compatible = "nxp,kinetis-usbd";
 	status = "okay";
 	num-bidir-endpoints = <8>;
 };
 
 &enet {
 	status = "okay";
-	pinctrl-0 = <&RMII0_RXER_PTA5 &RMII0_RXD1_PTA12
-				&RMII0_RXD0_PTA13 &RMII0_CRS_DV_PTA14
-				&RMII0_TXEN_PTA15 &RMII0_TXD0_PTA16
-				&RMII0_TXD1_PTA17 &RMII0_MDIO_PTB0
-				&RMII0_MDC_PTB1   &ENET_1588_CLKIN_PTE26>;
-};
-
-&RMII0_MDIO_PTB0 {
-	bias-pull-up;
-	drive-open-drain;
+	pinctrl-0 = <&enet_default>;
+	pinctrl-names = "default";
 };

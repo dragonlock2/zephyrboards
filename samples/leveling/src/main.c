@@ -24,19 +24,19 @@ const struct device *lsm6dsm = DEVICE_DT_GET_ANY(st_lsm6dsl); // compatible!
 #define GREEN_NODE DT_ALIAS(green_pwm_led)
 #define BLUE_NODE  DT_ALIAS(blue_pwm_led)
 
-#define PWM_PERIOD_USEC 10000 // 10ms
+#define PWM_PERIOD PWM_MSEC(10)
 
 void set_rgb(double r, double g, double b) {
-    uint32_t rp = round(r * PWM_PERIOD_USEC);
-    uint32_t gp = round(g * PWM_PERIOD_USEC);
-    uint32_t bp = round(b * PWM_PERIOD_USEC);
+    uint32_t rp = round(r * PWM_PERIOD);
+    uint32_t gp = round(g * PWM_PERIOD);
+    uint32_t bp = round(b * PWM_PERIOD);
 
-    pwm_pin_set_usec(leds[0], DT_PWMS_CHANNEL(RED_NODE),
-        PWM_PERIOD_USEC, rp, DT_PWMS_FLAGS(RED_NODE));
-    pwm_pin_set_usec(leds[1], DT_PWMS_CHANNEL(GREEN_NODE),
-        PWM_PERIOD_USEC, gp, DT_PWMS_FLAGS(GREEN_NODE));
-    pwm_pin_set_usec(leds[2], DT_PWMS_CHANNEL(BLUE_NODE),
-        PWM_PERIOD_USEC, bp, DT_PWMS_FLAGS(BLUE_NODE));
+    pwm_set(leds[0], DT_PWMS_CHANNEL(RED_NODE),
+        PWM_PERIOD, rp, DT_PWMS_FLAGS(RED_NODE));
+    pwm_set(leds[1], DT_PWMS_CHANNEL(GREEN_NODE),
+        PWM_PERIOD, gp, DT_PWMS_FLAGS(GREEN_NODE));
+    pwm_set(leds[2], DT_PWMS_CHANNEL(BLUE_NODE),
+        PWM_PERIOD, bp, DT_PWMS_FLAGS(BLUE_NODE));
 }
 
 // angles

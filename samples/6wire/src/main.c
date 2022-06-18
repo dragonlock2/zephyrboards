@@ -29,15 +29,15 @@ const struct gpio_dt_spec drdy = GPIO_DT_SPEC_GET(DT_NODELABEL(drdy), gpios);
 #define GREEN_NODE DT_ALIAS(green_pwm_led)
 #define BLUE_NODE  DT_ALIAS(blue_pwm_led)
 
-#define PWM_PERIOD 10000 // us
+#define PWM_PERIOD PWM_MSEC(10)
 
 void set_rgb(double r, double g, double b) {
     // no invert setting :(
-    pwm_pin_set_usec(leds[0], DT_PWMS_CHANNEL(RED_NODE),
+    pwm_set(leds[0], DT_PWMS_CHANNEL(RED_NODE),
         PWM_PERIOD, PWM_PERIOD - r * PWM_PERIOD, DT_PWMS_FLAGS(RED_NODE));
-    pwm_pin_set_usec(leds[1], DT_PWMS_CHANNEL(GREEN_NODE),
+    pwm_set(leds[1], DT_PWMS_CHANNEL(GREEN_NODE),
         PWM_PERIOD, PWM_PERIOD - g * PWM_PERIOD, DT_PWMS_FLAGS(GREEN_NODE));
-    pwm_pin_set_usec(leds[2], DT_PWMS_CHANNEL(BLUE_NODE),
+    pwm_set(leds[2], DT_PWMS_CHANNEL(BLUE_NODE),
         PWM_PERIOD, PWM_PERIOD - b * PWM_PERIOD, DT_PWMS_FLAGS(BLUE_NODE));
 }
 

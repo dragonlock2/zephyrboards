@@ -1,6 +1,6 @@
 /dts-v1/;
 #include <st/g0/stm32g0b1Xe.dtsi>
-#include <st/g0/stm32g0b1k(c-e)txn-pinctrl.dtsi>
+#include <st/g0/stm32g0b1k(b-c-e)txn-pinctrl.dtsi>
 
 / {
 	model = "NOGUSB STM32G0B1KET6N Development Board";
@@ -67,7 +67,7 @@
 
 	soc {
 		can {
-			compatible = "bosch,m-can-base";
+			compatible = "bosch,m_can-base";
 			#address-cells = <1>;
 			#size-cells = <1>;
 			std-filter-elements = <28>;
@@ -87,6 +87,10 @@
 				interrupt-names = "LINE_0", "LINE_1";
 				status = "disabled";
 				label = "CAN_1";
+				sjw = <1>;
+				sample-point = <875>;
+				sjw-data = <1>;
+				sample-point-data = <875>;
 			};
 
 			can2: can@40006800 {
@@ -99,6 +103,10 @@
 				interrupt-names = "LINE_0", "LINE_1";
 				status = "disabled";
 				label = "CAN_2";
+				sjw = <1>;
+				sample-point = <875>;
+				sjw-data = <1>;
+				sample-point-data = <875>;
 			};
 		};
 	};
@@ -200,12 +208,8 @@ zephyr_udc0: &usb {
 	status = "okay";
 	pinctrl-0 = <&fdcan1_rx_pd0 &fdcan1_tx_pd1>;
 	pinctrl-names = "default";
-	bus-speed = <1000000>;
-	sjw = <1>;
-	sample-point = <875>;
-	bus-speed-data = <8000000>;
-	sjw-data = <1>;
-	sample-point-data = <875>;
+	bus-speed = <125000>;
+	bus-speed-data = <1000000>;
 };
 
 &can2 {

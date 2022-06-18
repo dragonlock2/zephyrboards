@@ -96,7 +96,7 @@ int main() {
 
 	// SPI
 	struct spi_config spi_cfg = {0};
-	spi_cfg.frequency = 100000;
+	spi_cfg.frequency = 250000;
 	spi_cfg.operation |= SPI_OP_MODE_MASTER;
 	// spi_cfg.operation |= SPI_MODE_CPOL;
 	// spi_cfg.operation |= SPI_MODE_CPHA;
@@ -147,8 +147,10 @@ int main() {
 	dac_write_value(dac, 2, 1241); // 1V
 
 	// CAN
-	can_set_mode(can, CAN_NORMAL_MODE);
-	// setting bitrate dynamically not working :(
+	can_set_mode(can, CAN_MODE_LOOPBACK);
+	/* TODO test physically */
+	can_set_bitrate(can, 1000000);
+	can_set_bitrate_data(can, 4000000);
 	can_add_rx_filter_msgq(can, &can_msgq, &can_filter);
 
 	struct zcan_frame txmsg = {
