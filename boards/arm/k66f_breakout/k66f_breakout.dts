@@ -158,9 +158,8 @@
 	status = "okay";
 	pinctrl-0 = <&spi1_default>;
 	pinctrl-names = "default";
-	cs-gpios = <&gpioe 4 GPIO_ACTIVE_HIGH>;
+	cs-gpios = <&gpioe 4 GPIO_ACTIVE_LOW>;
 
-	/* TODO get working */
 	sdhc0: sdhc@0 {
 		compatible = "zephyr,sdhc-spi-slot";
 		reg = <0>;
@@ -170,7 +169,6 @@
 		mmc {
 			compatible = "zephyr,sdmmc-disk";
 			status = "okay";
-			label = "SDMMC_0";
 		};
 	};
 };
