@@ -1,0 +1,26 @@
+config SOC_PART_NUMBER_EFM32WG332F256
+    bool
+    depends on SOC_SERIES_EFM32WG
+
+config SOC_PART_NUMBER
+    default "EFM32WG332F256" if SOC_PART_NUMBER_EFM32WG332F256
+
+config LEUART_GECKO
+    default y
+    depends on SERIAL
+
+if BOARD_EFM32WG
+
+config BOARD
+    default "efm32wg"
+
+config CMU_HFXO_FREQ
+    default 48000000
+
+config CMU_LFXO_FREQ
+    default 32768
+
+config CMU_HFRCO_FREQ
+    default 14000000
+
+endif # BOARD_EFM32WG

@@ -1,0 +1,4 @@
+config BOARD_EFM32WG
+    bool "efm32wg breakout board"
+    depends on SOC_SERIES_EFM32WG
+    select SOC_PART_NUMBER_EFM32WG332F256

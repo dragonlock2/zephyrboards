@@ -1,0 +1,127 @@
+/dts-v1/;
+#include "efm32wg332f256.dtsi"
+
+/ {
+    model = "EFM32WG breakout board";
+    compatible = "silabs,efm32wg";
+
+    chosen {
+        zephyr,console = &usart2;
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+    };
+
+    aliases {
+        led0 = &led_red;
+        led1 = &led_green;
+        led2 = &led_blue;
+        sw0 = &user_button;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led_red: led_0 {
+            gpios = <&gpioc 8 GPIO_ACTIVE_LOW>;
+        };
+        led_green: led_1 {
+            gpios = <&gpioc 9 GPIO_ACTIVE_LOW>;
+        };
+        led_blue: led_2 {
+            gpios = <&gpioc 10 GPIO_ACTIVE_LOW>;
+        };
+    };
+
+    gpio_keys {
+        compatible = "gpio-keys";
+        user_button: button {
+            gpios = <&gpioc 11 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+            label = "User";
+        };
+    };
+};
+
+&cpu0 {
+    clock-frequency = <14000000>;
+};
+
+&gpioa {
+    status = "okay";
+};
+
+&gpiob {
+    status = "okay";
+};
+
+&gpioc {
+    status = "okay";
+};
+
+&gpiod {
+    status = "okay";
+};
+
+&gpioe {
+    status = "okay";
+};
+
+&gpiof {
+    status = "okay";
+};
+
+&usart2 {
+    status = "okay";
+    current-speed = <115200>;
+    location-rx = <GECKO_LOCATION(0) GECKO_PORT_C GECKO_PIN(3)>;
+    location-tx = <GECKO_LOCATION(0) GECKO_PORT_C GECKO_PIN(2)>;
+};
+
+&usart0 {
+    compatible = "silabs,gecko-spi-usart";
+    status = "okay";
+    #address-cells = <1>;
+    #size-cells = <0>;
+
+    location-rx = <GECKO_LOCATION(0) GECKO_PORT_E GECKO_PIN(11)>;
+    location-tx = <GECKO_LOCATION(0) GECKO_PORT_E GECKO_PIN(10)>;
+    location-clk = <GECKO_LOCATION(0) GECKO_PORT_E GECKO_PIN(12)>;
+    cs-gpios = <&gpioe 13 GPIO_ACTIVE_LOW>;
+};
+
+&usart1 {
+    compatible = "silabs,gecko-spi-usart";
+    status = "okay";
+    #address-cells = <1>;
+    #size-cells = <0>;
+
+    location-rx = <GECKO_LOCATION(0) GECKO_PORT_D GECKO_PIN(1)>;
+    location-tx = <GECKO_LOCATION(0) GECKO_PORT_D GECKO_PIN(0)>;
+    location-clk = <GECKO_LOCATION(0) GECKO_PORT_D GECKO_PIN(2)>;
+    cs-gpios = <&gpiod 3 GPIO_ACTIVE_LOW>;
+};
+
+&i2c0 {
+    status = "okay";
+    location-sda = <GECKO_LOCATION(0) GECKO_PORT_A GECKO_PIN(0)>;
+    location-scl = <GECKO_LOCATION(0) GECKO_PORT_A GECKO_PIN(1)>;
+};
+
+&i2c1 {
+    status = "okay";
+    location-sda = <GECKO_LOCATION(0) GECKO_PORT_C GECKO_PIN(4)>;
+    location-scl = <GECKO_LOCATION(0) GECKO_PORT_C GECKO_PIN(5)>;
+};
+
+// driver uses LFXO clock, limited to 9600 baud/s
+&leuart0 {
+    status = "okay";
+    current-speed = <9600>;
+    location-rx = <GECKO_LOCATION(0) GECKO_PORT_E GECKO_PIN(15)>;
+    location-tx = <GECKO_LOCATION(0) GECKO_PORT_E GECKO_PIN(14)>;
+};
+
+&leuart1 {
+    status = "okay";
+    current-speed = <9600>;
+    location-rx = <GECKO_LOCATION(0) GECKO_PORT_C GECKO_PIN(7)>;
+    location-tx = <GECKO_LOCATION(0) GECKO_PORT_C GECKO_PIN(6)>;
+};
