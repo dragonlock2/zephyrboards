@@ -43,6 +43,7 @@
 	};
 
 	aliases {
+		bootloader-led0 = &led_blue;
 		led0 = &led_red;
 		led1 = &led_green;
 		led2 = &led_blue;
@@ -151,15 +152,7 @@
 		};
 		image_0_primary_partition: partition@10000 {
 			label = "image-0";
-			reg = <0x00010000 0x00024000>; // 144KiB
-		};
-		image_0_secondary_partition: partition@34000 {
-			label = "image-1";
-			reg = <0x00034000 0x00024000>; // 144KiB
-		};
-		scratch_partition: partition@58000 {
-			label = "image-scratch";
-			reg = <0x00058000 0x00028000>; // 160KiB
+			reg = <0x00010000 0x00070000>; // 448KiB
 		};
 	};
 };
