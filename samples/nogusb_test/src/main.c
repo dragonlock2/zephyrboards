@@ -148,7 +148,6 @@ int main() {
 
 	// CAN
 	can_set_mode(can, CAN_MODE_LOOPBACK);
-	/* TODO test physically */
 	can_set_bitrate(can, 1000000);
 	can_set_bitrate_data(can, 4000000);
 	can_add_rx_filter_msgq(can, &can_msgq, &can_filter);

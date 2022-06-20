@@ -13,7 +13,7 @@
 		zephyr,uart-mcumgr = &usart5;
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
-		zephyr,code-partition = &slot0_partition;
+		zephyr,code-partition = &image_0_primary_partition;
 	};
 
 	// supported peripherals
@@ -146,21 +146,20 @@
 
 		boot_partition: partition@0 {
 			label = "mcuboot";
-			reg = <0x00000000 0x0000C000>;
+			reg = <0x00000000 0x00010000>; // 64KiB
 			read-only;
 		};
-		slot0_partition: partition@C000 {
+		image_0_primary_partition: partition@10000 {
 			label = "image-0";
-			reg = <0x0000C000 0x00032000>;
+			reg = <0x00010000 0x00024000>; // 144KiB
 		};
-		slot1_partition: partition@3E000 {
+		image_0_secondary_partition: partition@34000 {
 			label = "image-1";
-			reg = <0x0003E000 0x00032000>;
+			reg = <0x00034000 0x00024000>; // 144KiB
 		};
-		/* final 64KiB reserved for app storage partition */
-		storage_partition: partition@70000 {
-			label = "storage";
-			reg = <0x00070000 0x00010000>;
+		scratch_partition: partition@58000 {
+			label = "image-scratch";
+			reg = <0x00058000 0x00028000>; // 160KiB
 		};
 	};
 };
