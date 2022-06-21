@@ -1,0 +1,26 @@
+description: settings for DAC channels
+
+include: base.yaml
+
+compatible: "test,dac"
+
+properties:
+  device:
+    type: phandle
+    required: true
+
+  channels:
+    type: array
+    required: true
+
+  resolution:
+    type: int
+    default: 12
+
+  reference-voltage-mv:
+    type: int
+    default: 3300
+
+  label:
+    type: string
+    default: "some DAC"

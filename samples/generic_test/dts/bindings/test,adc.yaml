@@ -1,0 +1,26 @@
+description: settings for ADC channels
+
+include: base.yaml
+
+compatible: "test,adc"
+
+properties:
+  device:
+    type: phandle
+    required: true
+
+  channels:
+    type: array
+    required: true
+
+  resolution:
+    type: int
+    default: 12
+
+  reference-voltage-mv:
+    type: int
+    default: 3300
+
+  label:
+    type: string
+    default: "some ADC"

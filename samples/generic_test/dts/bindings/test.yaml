@@ -1,0 +1,33 @@
+description: Available peripherals to test
+
+include: base.yaml
+
+compatible: "test"
+
+properties:
+  leds:
+    type: phandles
+
+  buttons:
+    type: phandles
+
+  spi:
+    type: phandles
+
+  i2c:
+    type: phandles
+
+  uart:
+    type: phandles
+
+  usb:
+    type: boolean
+
+  sd:
+    type: boolean
+
+  can:
+    type: phandles
+
+  network:
+    type: boolean

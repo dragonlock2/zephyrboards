@@ -1,0 +1,27 @@
+/ {
+    fluffernutter {
+        compatible = "test";
+        leds = <&led_red &led_green &led_blue>;
+        buttons = <&dbg_1 &dbg_2>;
+        spi = <&spi2>;
+        i2c = <&i2c2>;
+        usb;
+        adc0 {
+            compatible = "test,adc";
+            device = <&adc1>;
+            channels = <1>;
+            resolution = <12>;
+            reference-voltage-mv = <36300>;
+            label = "USB bus voltage";
+        };
+        dac0 {
+            compatible = "test,dac";
+            device = <&dac1>;
+            channels = <2>;
+            resolution = <12>;
+            reference-voltage-mv = <3300>;
+            label = "Peripheral output";
+        };
+        can = <&can1>;
+    };
+};

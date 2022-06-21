@@ -1,0 +1,13 @@
+/ {
+    littlefinger {
+        compatible = "test";
+        leds = <&led_red &led_green &led_blue>;
+        buttons = <&user_button &sd_detect &usbid_0 &usbid_1>;
+        spi = <&spi0>;
+        i2c = <&i2c0>;
+        usb;
+        sd;
+        can = <&flexcan0>;
+        network;
+    };
+};

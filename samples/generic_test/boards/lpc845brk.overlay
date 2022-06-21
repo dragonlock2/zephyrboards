@@ -1,0 +1,7 @@
+/ {
+    flub {
+        compatible = "test";
+        leds = <&led_red &led_green &led_blue>;
+        buttons = <&user_button>;
+    };
+};
