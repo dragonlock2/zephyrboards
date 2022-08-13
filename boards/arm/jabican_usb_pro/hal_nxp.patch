@@ -1,0 +1,1050 @@
+diff --git a/mcux/mcux-sdk/devices/MK22F51212/MK22F51212.h b/mcux/mcux-sdk/devices/MK22F51212/MK22F51212.h
+index 2f42dbd..7ab1611 100644
+--- a/mcux/mcux-sdk/devices/MK22F51212/MK22F51212.h
++++ b/mcux/mcux-sdk/devices/MK22F51212/MK22F51212.h
+@@ -223,12 +223,12 @@ typedef enum IRQn {
+   DAC1_IRQn                    = 72,               /**< DAC1 interrupt */
+   ADC1_IRQn                    = 73,               /**< ADC1 interrupt */
+   Reserved90_IRQn              = 74,               /**< Reserved Interrupt 90 */
+-  Reserved91_IRQn              = 75,               /**< Reserved Interrupt 91 */
+-  Reserved92_IRQn              = 76,               /**< Reserved Interrupt 92 */
+-  Reserved93_IRQn              = 77,               /**< Reserved Interrupt 93 */
+-  Reserved94_IRQn              = 78,               /**< Reserved Interrupt 94 */
+-  Reserved95_IRQn              = 79,               /**< Reserved Interrupt 95 */
+-  Reserved96_IRQn              = 80,               /**< Reserved Interrupt 96 */
++  CAN0_ORed_Message_buffer_IRQn = 75,              /**< CAN0 OR'd message buffers interrupt */
++  CAN0_Bus_Off_IRQn            = 76,               /**< CAN0 bus off interrupt */
++  CAN0_Error_IRQn              = 77,               /**< CAN0 error interrupt */
++  CAN0_Tx_Warning_IRQn         = 78,               /**< CAN0 Tx warning interrupt */
++  CAN0_Rx_Warning_IRQn         = 79,               /**< CAN0 Rx warning interrupt */
++  CAN0_Wake_Up_IRQn            = 80,               /**< CAN0 wake up interrupt */
+   Reserved97_IRQn              = 81,               /**< Reserved Interrupt 97 */
+   Reserved98_IRQn              = 82,               /**< Reserved Interrupt 98 */
+   Reserved99_IRQn              = 83,               /**< Reserved Interrupt 99 */
+@@ -850,6 +850,900 @@ typedef struct {
+  * @}
+  */ /* end of group ADC_Peripheral_Access_Layer */
+ 
++/* ----------------------------------------------------------------------------
++   -- CAN Peripheral Access Layer
++   ---------------------------------------------------------------------------- */
++
++/*!
++ * @addtogroup CAN_Peripheral_Access_Layer CAN Peripheral Access Layer
++ * @{
++ */
++
++/** CAN - Register Layout Typedef */
++typedef struct {
++  __IO uint32_t MCR;                               /**< Module Configuration Register, offset: 0x0 */
++  __IO uint32_t CTRL1;                             /**< Control 1 register, offset: 0x4 */
++  __IO uint32_t TIMER;                             /**< Free Running Timer, offset: 0x8 */
++       uint8_t RESERVED_0[4];
++  __IO uint32_t RXMGMASK;                          /**< Rx Mailboxes Global Mask Register, offset: 0x10 */
++  __IO uint32_t RX14MASK;                          /**< Rx 14 Mask register, offset: 0x14 */
++  __IO uint32_t RX15MASK;                          /**< Rx 15 Mask register, offset: 0x18 */
++  __IO uint32_t ECR;                               /**< Error Counter, offset: 0x1C */
++  __IO uint32_t ESR1;                              /**< Error and Status 1 register, offset: 0x20 */
++       uint8_t RESERVED_1[4];
++  __IO uint32_t IMASK1;                            /**< Interrupt Masks 1 register, offset: 0x28 */
++       uint8_t RESERVED_2[4];
++  __IO uint32_t IFLAG1;                            /**< Interrupt Flags 1 register, offset: 0x30 */
++  __IO uint32_t CTRL2;                             /**< Control 2 register, offset: 0x34 */
++  __I  uint32_t ESR2;                              /**< Error and Status 2 register, offset: 0x38 */
++       uint8_t RESERVED_3[8];
++  __I  uint32_t CRCR;                              /**< CRC Register, offset: 0x44 */
++  __IO uint32_t RXFGMASK;                          /**< Rx FIFO Global Mask register, offset: 0x48 */
++  __I  uint32_t RXFIR;                             /**< Rx FIFO Information Register, offset: 0x4C */
++       uint8_t RESERVED_4[48];
++  struct {                                         /* offset: 0x80, array step: 0x10 */
++    __IO uint32_t CS;                                /**< Message Buffer 0 CS Register..Message Buffer 15 CS Register, array offset: 0x80, array step: 0x10 */
++    __IO uint32_t ID;                                /**< Message Buffer 0 ID Register..Message Buffer 15 ID Register, array offset: 0x84, array step: 0x10 */
++    __IO uint32_t WORD0;                             /**< Message Buffer 0 WORD0 Register..Message Buffer 15 WORD0 Register, array offset: 0x88, array step: 0x10 */
++    __IO uint32_t WORD1;                             /**< Message Buffer 0 WORD1 Register..Message Buffer 15 WORD1 Register, array offset: 0x8C, array step: 0x10 */
++  } MB[16];
++       uint8_t RESERVED_5[1792];
++  __IO uint32_t RXIMR[16];                         /**< Rx Individual Mask Registers, array offset: 0x880, array step: 0x4 */
++} CAN_Type;
++
++/* ----------------------------------------------------------------------------
++   -- CAN Register Masks
++   ---------------------------------------------------------------------------- */
++
++/*!
++ * @addtogroup CAN_Register_Masks CAN Register Masks
++ * @{
++ */
++
++/*! @name MCR - Module Configuration Register */
++/*! @{ */
++
++#define CAN_MCR_MAXMB_MASK                       (0x7FU)
++#define CAN_MCR_MAXMB_SHIFT                      (0U)
++/*! MAXMB - Number Of The Last Message Buffer
++ */
++#define CAN_MCR_MAXMB(x)                         (((uint32_t)(((uint32_t)(x)) << CAN_MCR_MAXMB_SHIFT)) & CAN_MCR_MAXMB_MASK)
++
++#define CAN_MCR_IDAM_MASK                        (0x300U)
++#define CAN_MCR_IDAM_SHIFT                       (8U)
++/*! IDAM - ID Acceptance Mode
++ *  0b00..Format A: One full ID (standard and extended) per ID Filter Table element.
++ *  0b01..Format B: Two full standard IDs or two partial 14-bit (standard and extended) IDs per ID Filter Table element.
++ *  0b10..Format C: Four partial 8-bit Standard IDs per ID Filter Table element.
++ *  0b11..Format D: All frames rejected.
++ */
++#define CAN_MCR_IDAM(x)                          (((uint32_t)(((uint32_t)(x)) << CAN_MCR_IDAM_SHIFT)) & CAN_MCR_IDAM_MASK)
++
++#define CAN_MCR_AEN_MASK                         (0x1000U)
++#define CAN_MCR_AEN_SHIFT                        (12U)
++/*! AEN - Abort Enable
++ *  0b0..Abort disabled.
++ *  0b1..Abort enabled.
++ */
++#define CAN_MCR_AEN(x)                           (((uint32_t)(((uint32_t)(x)) << CAN_MCR_AEN_SHIFT)) & CAN_MCR_AEN_MASK)
++
++#define CAN_MCR_LPRIOEN_MASK                     (0x2000U)
++#define CAN_MCR_LPRIOEN_SHIFT                    (13U)
++/*! LPRIOEN - Local Priority Enable
++ *  0b0..Local Priority disabled.
++ *  0b1..Local Priority enabled.
++ */
++#define CAN_MCR_LPRIOEN(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_MCR_LPRIOEN_SHIFT)) & CAN_MCR_LPRIOEN_MASK)
++
++#define CAN_MCR_IRMQ_MASK                        (0x10000U)
++#define CAN_MCR_IRMQ_SHIFT                       (16U)
++/*! IRMQ - Individual Rx Masking And Queue Enable
++ *  0b0..Individual Rx masking and queue feature are disabled. For backward compatibility with legacy
++ *       applications, the reading of C/S word locks the MB even if it is EMPTY.
++ *  0b1..Individual Rx masking and queue feature are enabled.
++ */
++#define CAN_MCR_IRMQ(x)                          (((uint32_t)(((uint32_t)(x)) << CAN_MCR_IRMQ_SHIFT)) & CAN_MCR_IRMQ_MASK)
++
++#define CAN_MCR_SRXDIS_MASK                      (0x20000U)
++#define CAN_MCR_SRXDIS_SHIFT                     (17U)
++/*! SRXDIS - Self Reception Disable
++ *  0b0..Self reception enabled.
++ *  0b1..Self reception disabled.
++ */
++#define CAN_MCR_SRXDIS(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_MCR_SRXDIS_SHIFT)) & CAN_MCR_SRXDIS_MASK)
++
++#define CAN_MCR_WAKSRC_MASK                      (0x80000U)
++#define CAN_MCR_WAKSRC_SHIFT                     (19U)
++/*! WAKSRC - Wake Up Source
++ *  0b0..FlexCAN uses the unfiltered Rx input to detect recessive to dominant edges on the CAN bus.
++ *  0b1..FlexCAN uses the filtered Rx input to detect recessive to dominant edges on the CAN bus.
++ */
++#define CAN_MCR_WAKSRC(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_MCR_WAKSRC_SHIFT)) & CAN_MCR_WAKSRC_MASK)
++
++#define CAN_MCR_LPMACK_MASK                      (0x100000U)
++#define CAN_MCR_LPMACK_SHIFT                     (20U)
++/*! LPMACK - Low-Power Mode Acknowledge
++ *  0b0..FlexCAN is not in a low-power mode.
++ *  0b1..FlexCAN is in a low-power mode.
++ */
++#define CAN_MCR_LPMACK(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_MCR_LPMACK_SHIFT)) & CAN_MCR_LPMACK_MASK)
++
++#define CAN_MCR_WRNEN_MASK                       (0x200000U)
++#define CAN_MCR_WRNEN_SHIFT                      (21U)
++/*! WRNEN - Warning Interrupt Enable
++ *  0b0..TWRNINT and RWRNINT bits are zero, independent of the values in the error counters.
++ *  0b1..TWRNINT and RWRNINT bits are set when the respective error counter transitions from less than 96 to greater than or equal to 96.
++ */
++#define CAN_MCR_WRNEN(x)                         (((uint32_t)(((uint32_t)(x)) << CAN_MCR_WRNEN_SHIFT)) & CAN_MCR_WRNEN_MASK)
++
++#define CAN_MCR_SLFWAK_MASK                      (0x400000U)
++#define CAN_MCR_SLFWAK_SHIFT                     (22U)
++/*! SLFWAK - Self Wake Up
++ *  0b0..FlexCAN Self Wake Up feature is disabled.
++ *  0b1..FlexCAN Self Wake Up feature is enabled.
++ */
++#define CAN_MCR_SLFWAK(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_MCR_SLFWAK_SHIFT)) & CAN_MCR_SLFWAK_MASK)
++
++#define CAN_MCR_SUPV_MASK                        (0x800000U)
++#define CAN_MCR_SUPV_SHIFT                       (23U)
++/*! SUPV - Supervisor Mode
++ *  0b0..FlexCAN is in User mode. Affected registers allow both Supervisor and Unrestricted accesses .
++ *  0b1..FlexCAN is in Supervisor mode. Affected registers allow only Supervisor access. Unrestricted access
++ *       behaves as though the access was done to an unimplemented register location .
++ */
++#define CAN_MCR_SUPV(x)                          (((uint32_t)(((uint32_t)(x)) << CAN_MCR_SUPV_SHIFT)) & CAN_MCR_SUPV_MASK)
++
++#define CAN_MCR_FRZACK_MASK                      (0x1000000U)
++#define CAN_MCR_FRZACK_SHIFT                     (24U)
++/*! FRZACK - Freeze Mode Acknowledge
++ *  0b0..FlexCAN not in Freeze mode, prescaler running.
++ *  0b1..FlexCAN in Freeze mode, prescaler stopped.
++ */
++#define CAN_MCR_FRZACK(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_MCR_FRZACK_SHIFT)) & CAN_MCR_FRZACK_MASK)
++
++#define CAN_MCR_SOFTRST_MASK                     (0x2000000U)
++#define CAN_MCR_SOFTRST_SHIFT                    (25U)
++/*! SOFTRST - Soft Reset
++ *  0b0..No reset request.
++ *  0b1..Resets the registers affected by soft reset.
++ */
++#define CAN_MCR_SOFTRST(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_MCR_SOFTRST_SHIFT)) & CAN_MCR_SOFTRST_MASK)
++
++#define CAN_MCR_WAKMSK_MASK                      (0x4000000U)
++#define CAN_MCR_WAKMSK_SHIFT                     (26U)
++/*! WAKMSK - Wake Up Interrupt Mask
++ *  0b0..Wake Up Interrupt is disabled.
++ *  0b1..Wake Up Interrupt is enabled.
++ */
++#define CAN_MCR_WAKMSK(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_MCR_WAKMSK_SHIFT)) & CAN_MCR_WAKMSK_MASK)
++
++#define CAN_MCR_NOTRDY_MASK                      (0x8000000U)
++#define CAN_MCR_NOTRDY_SHIFT                     (27U)
++/*! NOTRDY - FlexCAN Not Ready
++ *  0b0..FlexCAN module is either in Normal mode, Listen-Only mode or Loop-Back mode.
++ *  0b1..FlexCAN module is either in Disable mode , Stop mode or Freeze mode.
++ */
++#define CAN_MCR_NOTRDY(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_MCR_NOTRDY_SHIFT)) & CAN_MCR_NOTRDY_MASK)
++
++#define CAN_MCR_HALT_MASK                        (0x10000000U)
++#define CAN_MCR_HALT_SHIFT                       (28U)
++/*! HALT - Halt FlexCAN
++ *  0b0..No Freeze mode request.
++ *  0b1..Enters Freeze mode if the FRZ bit is asserted.
++ */
++#define CAN_MCR_HALT(x)                          (((uint32_t)(((uint32_t)(x)) << CAN_MCR_HALT_SHIFT)) & CAN_MCR_HALT_MASK)
++
++#define CAN_MCR_RFEN_MASK                        (0x20000000U)
++#define CAN_MCR_RFEN_SHIFT                       (29U)
++/*! RFEN - Rx FIFO Enable
++ *  0b0..Rx FIFO not enabled.
++ *  0b1..Rx FIFO enabled.
++ */
++#define CAN_MCR_RFEN(x)                          (((uint32_t)(((uint32_t)(x)) << CAN_MCR_RFEN_SHIFT)) & CAN_MCR_RFEN_MASK)
++
++#define CAN_MCR_FRZ_MASK                         (0x40000000U)
++#define CAN_MCR_FRZ_SHIFT                        (30U)
++/*! FRZ - Freeze Enable
++ *  0b0..Not enabled to enter Freeze mode.
++ *  0b1..Enabled to enter Freeze mode.
++ */
++#define CAN_MCR_FRZ(x)                           (((uint32_t)(((uint32_t)(x)) << CAN_MCR_FRZ_SHIFT)) & CAN_MCR_FRZ_MASK)
++
++#define CAN_MCR_MDIS_MASK                        (0x80000000U)
++#define CAN_MCR_MDIS_SHIFT                       (31U)
++/*! MDIS - Module Disable
++ *  0b0..Enable the FlexCAN module.
++ *  0b1..Disable the FlexCAN module.
++ */
++#define CAN_MCR_MDIS(x)                          (((uint32_t)(((uint32_t)(x)) << CAN_MCR_MDIS_SHIFT)) & CAN_MCR_MDIS_MASK)
++/*! @} */
++
++/*! @name CTRL1 - Control 1 register */
++/*! @{ */
++
++#define CAN_CTRL1_PROPSEG_MASK                   (0x7U)
++#define CAN_CTRL1_PROPSEG_SHIFT                  (0U)
++/*! PROPSEG - Propagation Segment
++ */
++#define CAN_CTRL1_PROPSEG(x)                     (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_PROPSEG_SHIFT)) & CAN_CTRL1_PROPSEG_MASK)
++
++#define CAN_CTRL1_LOM_MASK                       (0x8U)
++#define CAN_CTRL1_LOM_SHIFT                      (3U)
++/*! LOM - Listen-Only Mode
++ *  0b0..Listen-Only mode is deactivated.
++ *  0b1..FlexCAN module operates in Listen-Only mode.
++ */
++#define CAN_CTRL1_LOM(x)                         (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_LOM_SHIFT)) & CAN_CTRL1_LOM_MASK)
++
++#define CAN_CTRL1_LBUF_MASK                      (0x10U)
++#define CAN_CTRL1_LBUF_SHIFT                     (4U)
++/*! LBUF - Lowest Buffer Transmitted First
++ *  0b0..Buffer with highest priority is transmitted first.
++ *  0b1..Lowest number buffer is transmitted first.
++ */
++#define CAN_CTRL1_LBUF(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_LBUF_SHIFT)) & CAN_CTRL1_LBUF_MASK)
++
++#define CAN_CTRL1_TSYN_MASK                      (0x20U)
++#define CAN_CTRL1_TSYN_SHIFT                     (5U)
++/*! TSYN - Timer Sync
++ *  0b0..Timer Sync feature disabled
++ *  0b1..Timer Sync feature enabled
++ */
++#define CAN_CTRL1_TSYN(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_TSYN_SHIFT)) & CAN_CTRL1_TSYN_MASK)
++
++#define CAN_CTRL1_BOFFREC_MASK                   (0x40U)
++#define CAN_CTRL1_BOFFREC_SHIFT                  (6U)
++/*! BOFFREC - Bus Off Recovery
++ *  0b0..Automatic recovering from Bus Off state enabled, according to CAN Spec 2.0 part B.
++ *  0b1..Automatic recovering from Bus Off state disabled.
++ */
++#define CAN_CTRL1_BOFFREC(x)                     (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_BOFFREC_SHIFT)) & CAN_CTRL1_BOFFREC_MASK)
++
++#define CAN_CTRL1_SMP_MASK                       (0x80U)
++#define CAN_CTRL1_SMP_SHIFT                      (7U)
++/*! SMP - CAN Bit Sampling
++ *  0b0..Just one sample is used to determine the bit value.
++ *  0b1..Three samples are used to determine the value of the received bit: the regular one (sample point) and 2
++ *       preceding samples; a majority rule is used.
++ */
++#define CAN_CTRL1_SMP(x)                         (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_SMP_SHIFT)) & CAN_CTRL1_SMP_MASK)
++
++#define CAN_CTRL1_RWRNMSK_MASK                   (0x400U)
++#define CAN_CTRL1_RWRNMSK_SHIFT                  (10U)
++/*! RWRNMSK - Rx Warning Interrupt Mask
++ *  0b0..Rx Warning Interrupt disabled.
++ *  0b1..Rx Warning Interrupt enabled.
++ */
++#define CAN_CTRL1_RWRNMSK(x)                     (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_RWRNMSK_SHIFT)) & CAN_CTRL1_RWRNMSK_MASK)
++
++#define CAN_CTRL1_TWRNMSK_MASK                   (0x800U)
++#define CAN_CTRL1_TWRNMSK_SHIFT                  (11U)
++/*! TWRNMSK - Tx Warning Interrupt Mask
++ *  0b0..Tx Warning Interrupt disabled.
++ *  0b1..Tx Warning Interrupt enabled.
++ */
++#define CAN_CTRL1_TWRNMSK(x)                     (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_TWRNMSK_SHIFT)) & CAN_CTRL1_TWRNMSK_MASK)
++
++#define CAN_CTRL1_LPB_MASK                       (0x1000U)
++#define CAN_CTRL1_LPB_SHIFT                      (12U)
++/*! LPB - Loop Back Mode
++ *  0b0..Loop Back disabled.
++ *  0b1..Loop Back enabled.
++ */
++#define CAN_CTRL1_LPB(x)                         (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_LPB_SHIFT)) & CAN_CTRL1_LPB_MASK)
++
++#define CAN_CTRL1_CLKSRC_MASK                    (0x2000U)
++#define CAN_CTRL1_CLKSRC_SHIFT                   (13U)
++/*! CLKSRC - CAN Engine Clock Source
++ *  0b0..The CAN engine clock source is the oscillator clock. Under this condition, the oscillator clock frequency must be lower than the bus clock.
++ *  0b1..The CAN engine clock source is the peripheral clock.
++ */
++#define CAN_CTRL1_CLKSRC(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_CLKSRC_SHIFT)) & CAN_CTRL1_CLKSRC_MASK)
++
++#define CAN_CTRL1_ERRMSK_MASK                    (0x4000U)
++#define CAN_CTRL1_ERRMSK_SHIFT                   (14U)
++/*! ERRMSK - Error Mask
++ *  0b0..Error interrupt disabled.
++ *  0b1..Error interrupt enabled.
++ */
++#define CAN_CTRL1_ERRMSK(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_ERRMSK_SHIFT)) & CAN_CTRL1_ERRMSK_MASK)
++
++#define CAN_CTRL1_BOFFMSK_MASK                   (0x8000U)
++#define CAN_CTRL1_BOFFMSK_SHIFT                  (15U)
++/*! BOFFMSK - Bus Off Mask
++ *  0b0..Bus Off interrupt disabled.
++ *  0b1..Bus Off interrupt enabled.
++ */
++#define CAN_CTRL1_BOFFMSK(x)                     (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_BOFFMSK_SHIFT)) & CAN_CTRL1_BOFFMSK_MASK)
++
++#define CAN_CTRL1_PSEG2_MASK                     (0x70000U)
++#define CAN_CTRL1_PSEG2_SHIFT                    (16U)
++/*! PSEG2 - Phase Segment 2
++ */
++#define CAN_CTRL1_PSEG2(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_PSEG2_SHIFT)) & CAN_CTRL1_PSEG2_MASK)
++
++#define CAN_CTRL1_PSEG1_MASK                     (0x380000U)
++#define CAN_CTRL1_PSEG1_SHIFT                    (19U)
++/*! PSEG1 - Phase Segment 1
++ */
++#define CAN_CTRL1_PSEG1(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_PSEG1_SHIFT)) & CAN_CTRL1_PSEG1_MASK)
++
++#define CAN_CTRL1_RJW_MASK                       (0xC00000U)
++#define CAN_CTRL1_RJW_SHIFT                      (22U)
++/*! RJW - Resync Jump Width
++ */
++#define CAN_CTRL1_RJW(x)                         (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_RJW_SHIFT)) & CAN_CTRL1_RJW_MASK)
++
++#define CAN_CTRL1_PRESDIV_MASK                   (0xFF000000U)
++#define CAN_CTRL1_PRESDIV_SHIFT                  (24U)
++/*! PRESDIV - Prescaler Division Factor
++ */
++#define CAN_CTRL1_PRESDIV(x)                     (((uint32_t)(((uint32_t)(x)) << CAN_CTRL1_PRESDIV_SHIFT)) & CAN_CTRL1_PRESDIV_MASK)
++/*! @} */
++
++/*! @name TIMER - Free Running Timer */
++/*! @{ */
++
++#define CAN_TIMER_TIMER_MASK                     (0xFFFFU)
++#define CAN_TIMER_TIMER_SHIFT                    (0U)
++/*! TIMER - Timer Value
++ */
++#define CAN_TIMER_TIMER(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_TIMER_TIMER_SHIFT)) & CAN_TIMER_TIMER_MASK)
++/*! @} */
++
++/*! @name RXMGMASK - Rx Mailboxes Global Mask Register */
++/*! @{ */
++
++#define CAN_RXMGMASK_MG_MASK                     (0xFFFFFFFFU)
++#define CAN_RXMGMASK_MG_SHIFT                    (0U)
++/*! MG - Rx Mailboxes Global Mask Bits
++ *  0b00000000000000000000000000000000..The corresponding bit in the filter is "don't care."
++ *  0b00000000000000000000000000000001..The corresponding bit in the filter is checked.
++ */
++#define CAN_RXMGMASK_MG(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_RXMGMASK_MG_SHIFT)) & CAN_RXMGMASK_MG_MASK)
++/*! @} */
++
++/*! @name RX14MASK - Rx 14 Mask register */
++/*! @{ */
++
++#define CAN_RX14MASK_RX14M_MASK                  (0xFFFFFFFFU)
++#define CAN_RX14MASK_RX14M_SHIFT                 (0U)
++/*! RX14M - Rx Buffer 14 Mask Bits
++ *  0b00000000000000000000000000000000..The corresponding bit in the filter is "don't care."
++ *  0b00000000000000000000000000000001..The corresponding bit in the filter is checked.
++ */
++#define CAN_RX14MASK_RX14M(x)                    (((uint32_t)(((uint32_t)(x)) << CAN_RX14MASK_RX14M_SHIFT)) & CAN_RX14MASK_RX14M_MASK)
++/*! @} */
++
++/*! @name RX15MASK - Rx 15 Mask register */
++/*! @{ */
++
++#define CAN_RX15MASK_RX15M_MASK                  (0xFFFFFFFFU)
++#define CAN_RX15MASK_RX15M_SHIFT                 (0U)
++/*! RX15M - Rx Buffer 15 Mask Bits
++ *  0b00000000000000000000000000000000..The corresponding bit in the filter is "don't care."
++ *  0b00000000000000000000000000000001..The corresponding bit in the filter is checked.
++ */
++#define CAN_RX15MASK_RX15M(x)                    (((uint32_t)(((uint32_t)(x)) << CAN_RX15MASK_RX15M_SHIFT)) & CAN_RX15MASK_RX15M_MASK)
++/*! @} */
++
++/*! @name ECR - Error Counter */
++/*! @{ */
++
++#define CAN_ECR_TXERRCNT_MASK                    (0xFFU)
++#define CAN_ECR_TXERRCNT_SHIFT                   (0U)
++/*! TXERRCNT - Transmit Error Counter
++ */
++#define CAN_ECR_TXERRCNT(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_ECR_TXERRCNT_SHIFT)) & CAN_ECR_TXERRCNT_MASK)
++
++#define CAN_ECR_RXERRCNT_MASK                    (0xFF00U)
++#define CAN_ECR_RXERRCNT_SHIFT                   (8U)
++/*! RXERRCNT - Receive Error Counter
++ */
++#define CAN_ECR_RXERRCNT(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_ECR_RXERRCNT_SHIFT)) & CAN_ECR_RXERRCNT_MASK)
++/*! @} */
++
++/*! @name ESR1 - Error and Status 1 register */
++/*! @{ */
++
++#define CAN_ESR1_WAKINT_MASK                     (0x1U)
++#define CAN_ESR1_WAKINT_SHIFT                    (0U)
++/*! WAKINT - Wake-Up Interrupt
++ *  0b0..No such occurrence.
++ *  0b1..Indicates a recessive to dominant transition was received on the CAN bus.
++ */
++#define CAN_ESR1_WAKINT(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_WAKINT_SHIFT)) & CAN_ESR1_WAKINT_MASK)
++
++#define CAN_ESR1_ERRINT_MASK                     (0x2U)
++#define CAN_ESR1_ERRINT_SHIFT                    (1U)
++/*! ERRINT - Error Interrupt
++ *  0b0..No such occurrence.
++ *  0b1..Indicates setting of any Error Bit in the Error and Status Register.
++ */
++#define CAN_ESR1_ERRINT(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_ERRINT_SHIFT)) & CAN_ESR1_ERRINT_MASK)
++
++#define CAN_ESR1_BOFFINT_MASK                    (0x4U)
++#define CAN_ESR1_BOFFINT_SHIFT                   (2U)
++/*! BOFFINT - Bus Off Interrupt
++ *  0b0..No such occurrence.
++ *  0b1..FlexCAN module entered Bus Off state.
++ */
++#define CAN_ESR1_BOFFINT(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_BOFFINT_SHIFT)) & CAN_ESR1_BOFFINT_MASK)
++
++#define CAN_ESR1_RX_MASK                         (0x8U)
++#define CAN_ESR1_RX_SHIFT                        (3U)
++/*! RX - FlexCAN In Reception
++ *  0b0..FlexCAN is not receiving a message.
++ *  0b1..FlexCAN is receiving a message.
++ */
++#define CAN_ESR1_RX(x)                           (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_RX_SHIFT)) & CAN_ESR1_RX_MASK)
++
++#define CAN_ESR1_FLTCONF_MASK                    (0x30U)
++#define CAN_ESR1_FLTCONF_SHIFT                   (4U)
++/*! FLTCONF - Fault Confinement State
++ *  0b00..Error Active
++ *  0b01..Error Passive
++ *  0b1x..Bus Off
++ */
++#define CAN_ESR1_FLTCONF(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_FLTCONF_SHIFT)) & CAN_ESR1_FLTCONF_MASK)
++
++#define CAN_ESR1_TX_MASK                         (0x40U)
++#define CAN_ESR1_TX_SHIFT                        (6U)
++/*! TX - FlexCAN In Transmission
++ *  0b0..FlexCAN is not transmitting a message.
++ *  0b1..FlexCAN is transmitting a message.
++ */
++#define CAN_ESR1_TX(x)                           (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_TX_SHIFT)) & CAN_ESR1_TX_MASK)
++
++#define CAN_ESR1_IDLE_MASK                       (0x80U)
++#define CAN_ESR1_IDLE_SHIFT                      (7U)
++/*! IDLE
++ *  0b0..No such occurrence.
++ *  0b1..CAN bus is now IDLE.
++ */
++#define CAN_ESR1_IDLE(x)                         (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_IDLE_SHIFT)) & CAN_ESR1_IDLE_MASK)
++
++#define CAN_ESR1_RXWRN_MASK                      (0x100U)
++#define CAN_ESR1_RXWRN_SHIFT                     (8U)
++/*! RXWRN - Rx Error Warning
++ *  0b0..No such occurrence.
++ *  0b1..RXERRCNT is greater than or equal to 96.
++ */
++#define CAN_ESR1_RXWRN(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_RXWRN_SHIFT)) & CAN_ESR1_RXWRN_MASK)
++
++#define CAN_ESR1_TXWRN_MASK                      (0x200U)
++#define CAN_ESR1_TXWRN_SHIFT                     (9U)
++/*! TXWRN - TX Error Warning
++ *  0b0..No such occurrence.
++ *  0b1..TXERRCNT is greater than or equal to 96.
++ */
++#define CAN_ESR1_TXWRN(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_TXWRN_SHIFT)) & CAN_ESR1_TXWRN_MASK)
++
++#define CAN_ESR1_STFERR_MASK                     (0x400U)
++#define CAN_ESR1_STFERR_SHIFT                    (10U)
++/*! STFERR - Stuffing Error
++ *  0b0..No such occurrence.
++ *  0b1..A Stuffing Error occurred since last read of this register.
++ */
++#define CAN_ESR1_STFERR(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_STFERR_SHIFT)) & CAN_ESR1_STFERR_MASK)
++
++#define CAN_ESR1_FRMERR_MASK                     (0x800U)
++#define CAN_ESR1_FRMERR_SHIFT                    (11U)
++/*! FRMERR - Form Error
++ *  0b0..No such occurrence.
++ *  0b1..A Form Error occurred since last read of this register.
++ */
++#define CAN_ESR1_FRMERR(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_FRMERR_SHIFT)) & CAN_ESR1_FRMERR_MASK)
++
++#define CAN_ESR1_CRCERR_MASK                     (0x1000U)
++#define CAN_ESR1_CRCERR_SHIFT                    (12U)
++/*! CRCERR - Cyclic Redundancy Check Error
++ *  0b0..No such occurrence.
++ *  0b1..A CRC error occurred since last read of this register.
++ */
++#define CAN_ESR1_CRCERR(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_CRCERR_SHIFT)) & CAN_ESR1_CRCERR_MASK)
++
++#define CAN_ESR1_ACKERR_MASK                     (0x2000U)
++#define CAN_ESR1_ACKERR_SHIFT                    (13U)
++/*! ACKERR - Acknowledge Error
++ *  0b0..No such occurrence.
++ *  0b1..An ACK error occurred since last read of this register.
++ */
++#define CAN_ESR1_ACKERR(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_ACKERR_SHIFT)) & CAN_ESR1_ACKERR_MASK)
++
++#define CAN_ESR1_BIT0ERR_MASK                    (0x4000U)
++#define CAN_ESR1_BIT0ERR_SHIFT                   (14U)
++/*! BIT0ERR - Bit0 Error
++ *  0b0..No such occurrence.
++ *  0b1..At least one bit sent as dominant is received as recessive.
++ */
++#define CAN_ESR1_BIT0ERR(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_BIT0ERR_SHIFT)) & CAN_ESR1_BIT0ERR_MASK)
++
++#define CAN_ESR1_BIT1ERR_MASK                    (0x8000U)
++#define CAN_ESR1_BIT1ERR_SHIFT                   (15U)
++/*! BIT1ERR - Bit1 Error
++ *  0b0..No such occurrence.
++ *  0b1..At least one bit sent as recessive is received as dominant.
++ */
++#define CAN_ESR1_BIT1ERR(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_BIT1ERR_SHIFT)) & CAN_ESR1_BIT1ERR_MASK)
++
++#define CAN_ESR1_RWRNINT_MASK                    (0x10000U)
++#define CAN_ESR1_RWRNINT_SHIFT                   (16U)
++/*! RWRNINT - Rx Warning Interrupt Flag
++ *  0b0..No such occurrence.
++ *  0b1..The Rx error counter transitioned from less than 96 to greater than or equal to 96.
++ */
++#define CAN_ESR1_RWRNINT(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_RWRNINT_SHIFT)) & CAN_ESR1_RWRNINT_MASK)
++
++#define CAN_ESR1_TWRNINT_MASK                    (0x20000U)
++#define CAN_ESR1_TWRNINT_SHIFT                   (17U)
++/*! TWRNINT - Tx Warning Interrupt Flag
++ *  0b0..No such occurrence.
++ *  0b1..The Tx error counter transitioned from less than 96 to greater than or equal to 96.
++ */
++#define CAN_ESR1_TWRNINT(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_TWRNINT_SHIFT)) & CAN_ESR1_TWRNINT_MASK)
++
++#define CAN_ESR1_SYNCH_MASK                      (0x40000U)
++#define CAN_ESR1_SYNCH_SHIFT                     (18U)
++/*! SYNCH - CAN Synchronization Status
++ *  0b0..FlexCAN is not synchronized to the CAN bus.
++ *  0b1..FlexCAN is synchronized to the CAN bus.
++ */
++#define CAN_ESR1_SYNCH(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_ESR1_SYNCH_SHIFT)) & CAN_ESR1_SYNCH_MASK)
++/*! @} */
++
++/*! @name IMASK1 - Interrupt Masks 1 register */
++/*! @{ */
++
++#define CAN_IMASK1_BUFLM_MASK                    (0xFFFFFFFFU)
++#define CAN_IMASK1_BUFLM_SHIFT                   (0U)
++/*! BUFLM - Buffer MB i Mask
++ *  0b00000000000000000000000000000000..The corresponding buffer Interrupt is disabled.
++ *  0b00000000000000000000000000000001..The corresponding buffer Interrupt is enabled.
++ */
++#define CAN_IMASK1_BUFLM(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_IMASK1_BUFLM_SHIFT)) & CAN_IMASK1_BUFLM_MASK)
++/*! @} */
++
++/*! @name IFLAG1 - Interrupt Flags 1 register */
++/*! @{ */
++
++#define CAN_IFLAG1_BUF0I_MASK                    (0x1U)
++#define CAN_IFLAG1_BUF0I_SHIFT                   (0U)
++/*! BUF0I - Buffer MB0 Interrupt Or "reserved"
++ *  0b0..The corresponding buffer has no occurrence of successfully completed transmission or reception when MCR[RFEN]=0.
++ *  0b1..The corresponding buffer has successfully completed transmission or reception when MCR[RFEN]=0.
++ */
++#define CAN_IFLAG1_BUF0I(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_IFLAG1_BUF0I_SHIFT)) & CAN_IFLAG1_BUF0I_MASK)
++
++#define CAN_IFLAG1_BUF4TO1I_MASK                 (0x1EU)
++#define CAN_IFLAG1_BUF4TO1I_SHIFT                (1U)
++/*! BUF4TO1I - Buffer MB i Interrupt Or "reserved"
++ *  0b0000..The corresponding buffer has no occurrence of successfully completed transmission or reception when MCR[RFEN]=0.
++ *  0b0001..The corresponding buffer has successfully completed transmission or reception when MCR[RFEN]=0.
++ */
++#define CAN_IFLAG1_BUF4TO1I(x)                   (((uint32_t)(((uint32_t)(x)) << CAN_IFLAG1_BUF4TO1I_SHIFT)) & CAN_IFLAG1_BUF4TO1I_MASK)
++
++#define CAN_IFLAG1_BUF5I_MASK                    (0x20U)
++#define CAN_IFLAG1_BUF5I_SHIFT                   (5U)
++/*! BUF5I - Buffer MB5 Interrupt Or "Frames available in Rx FIFO"
++ *  0b0..No occurrence of MB5 completing transmission/reception when MCR[RFEN]=0, or of frame(s) available in the FIFO, when MCR[RFEN]=1
++ *  0b1..MB5 completed transmission/reception when MCR[RFEN]=0, or frame(s) available in the Rx FIFO when MCR[RFEN]=1
++ */
++#define CAN_IFLAG1_BUF5I(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_IFLAG1_BUF5I_SHIFT)) & CAN_IFLAG1_BUF5I_MASK)
++
++#define CAN_IFLAG1_BUF6I_MASK                    (0x40U)
++#define CAN_IFLAG1_BUF6I_SHIFT                   (6U)
++/*! BUF6I - Buffer MB6 Interrupt Or "Rx FIFO Warning"
++ *  0b0..No occurrence of MB6 completing transmission/reception when MCR[RFEN]=0, or of Rx FIFO almost full when MCR[RFEN]=1
++ *  0b1..MB6 completed transmission/reception when MCR[RFEN]=0, or Rx FIFO almost full when MCR[RFEN]=1
++ */
++#define CAN_IFLAG1_BUF6I(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_IFLAG1_BUF6I_SHIFT)) & CAN_IFLAG1_BUF6I_MASK)
++
++#define CAN_IFLAG1_BUF7I_MASK                    (0x80U)
++#define CAN_IFLAG1_BUF7I_SHIFT                   (7U)
++/*! BUF7I - Buffer MB7 Interrupt Or "Rx FIFO Overflow"
++ *  0b0..No occurrence of MB7 completing transmission/reception when MCR[RFEN]=0, or of Rx FIFO overflow when MCR[RFEN]=1
++ *  0b1..MB7 completed transmission/reception when MCR[RFEN]=0, or Rx FIFO overflow when MCR[RFEN]=1
++ */
++#define CAN_IFLAG1_BUF7I(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_IFLAG1_BUF7I_SHIFT)) & CAN_IFLAG1_BUF7I_MASK)
++
++#define CAN_IFLAG1_BUF31TO8I_MASK                (0xFFFFFF00U)
++#define CAN_IFLAG1_BUF31TO8I_SHIFT               (8U)
++/*! BUF31TO8I - Buffer MBi Interrupt
++ *  0b000000000000000000000000..The corresponding buffer has no occurrence of successfully completed transmission or reception.
++ *  0b000000000000000000000001..The corresponding buffer has successfully completed transmission or reception.
++ */
++#define CAN_IFLAG1_BUF31TO8I(x)                  (((uint32_t)(((uint32_t)(x)) << CAN_IFLAG1_BUF31TO8I_SHIFT)) & CAN_IFLAG1_BUF31TO8I_MASK)
++/*! @} */
++
++/*! @name CTRL2 - Control 2 register */
++/*! @{ */
++
++#define CAN_CTRL2_EACEN_MASK                     (0x10000U)
++#define CAN_CTRL2_EACEN_SHIFT                    (16U)
++/*! EACEN - Entire Frame Arbitration Field Comparison Enable For Rx Mailboxes
++ *  0b0..Rx Mailbox filter's IDE bit is always compared and RTR is never compared despite mask bits.
++ *  0b1..Enables the comparison of both Rx Mailbox filter's IDE and RTR bit with their corresponding bits within
++ *       the incoming frame. Mask bits do apply.
++ */
++#define CAN_CTRL2_EACEN(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_CTRL2_EACEN_SHIFT)) & CAN_CTRL2_EACEN_MASK)
++
++#define CAN_CTRL2_RRS_MASK                       (0x20000U)
++#define CAN_CTRL2_RRS_SHIFT                      (17U)
++/*! RRS - Remote Request Storing
++ *  0b0..Remote Response Frame is generated.
++ *  0b1..Remote Request Frame is stored.
++ */
++#define CAN_CTRL2_RRS(x)                         (((uint32_t)(((uint32_t)(x)) << CAN_CTRL2_RRS_SHIFT)) & CAN_CTRL2_RRS_MASK)
++
++#define CAN_CTRL2_MRP_MASK                       (0x40000U)
++#define CAN_CTRL2_MRP_SHIFT                      (18U)
++/*! MRP - Mailboxes Reception Priority
++ *  0b0..Matching starts from Rx FIFO and continues on Mailboxes.
++ *  0b1..Matching starts from Mailboxes and continues on Rx FIFO.
++ */
++#define CAN_CTRL2_MRP(x)                         (((uint32_t)(((uint32_t)(x)) << CAN_CTRL2_MRP_SHIFT)) & CAN_CTRL2_MRP_MASK)
++
++#define CAN_CTRL2_TASD_MASK                      (0xF80000U)
++#define CAN_CTRL2_TASD_SHIFT                     (19U)
++/*! TASD - Tx Arbitration Start Delay
++ */
++#define CAN_CTRL2_TASD(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_CTRL2_TASD_SHIFT)) & CAN_CTRL2_TASD_MASK)
++
++#define CAN_CTRL2_RFFN_MASK                      (0xF000000U)
++#define CAN_CTRL2_RFFN_SHIFT                     (24U)
++/*! RFFN - Number Of Rx FIFO Filters
++ */
++#define CAN_CTRL2_RFFN(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_CTRL2_RFFN_SHIFT)) & CAN_CTRL2_RFFN_MASK)
++
++#define CAN_CTRL2_WRMFRZ_MASK                    (0x10000000U)
++#define CAN_CTRL2_WRMFRZ_SHIFT                   (28U)
++/*! WRMFRZ - Write-Access To Memory In Freeze Mode
++ *  0b0..Maintain the write access restrictions.
++ *  0b1..Enable unrestricted write access to FlexCAN memory.
++ */
++#define CAN_CTRL2_WRMFRZ(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_CTRL2_WRMFRZ_SHIFT)) & CAN_CTRL2_WRMFRZ_MASK)
++/*! @} */
++
++/*! @name ESR2 - Error and Status 2 register */
++/*! @{ */
++
++#define CAN_ESR2_IMB_MASK                        (0x2000U)
++#define CAN_ESR2_IMB_SHIFT                       (13U)
++/*! IMB - Inactive Mailbox
++ *  0b0..If ESR2[VPS] is asserted, the ESR2[LPTM] is not an inactive Mailbox.
++ *  0b1..If ESR2[VPS] is asserted, there is at least one inactive Mailbox. LPTM content is the number of the first one.
++ */
++#define CAN_ESR2_IMB(x)                          (((uint32_t)(((uint32_t)(x)) << CAN_ESR2_IMB_SHIFT)) & CAN_ESR2_IMB_MASK)
++
++#define CAN_ESR2_VPS_MASK                        (0x4000U)
++#define CAN_ESR2_VPS_SHIFT                       (14U)
++/*! VPS - Valid Priority Status
++ *  0b0..Contents of IMB and LPTM are invalid.
++ *  0b1..Contents of IMB and LPTM are valid.
++ */
++#define CAN_ESR2_VPS(x)                          (((uint32_t)(((uint32_t)(x)) << CAN_ESR2_VPS_SHIFT)) & CAN_ESR2_VPS_MASK)
++
++#define CAN_ESR2_LPTM_MASK                       (0x7F0000U)
++#define CAN_ESR2_LPTM_SHIFT                      (16U)
++/*! LPTM - Lowest Priority Tx Mailbox
++ */
++#define CAN_ESR2_LPTM(x)                         (((uint32_t)(((uint32_t)(x)) << CAN_ESR2_LPTM_SHIFT)) & CAN_ESR2_LPTM_MASK)
++/*! @} */
++
++/*! @name CRCR - CRC Register */
++/*! @{ */
++
++#define CAN_CRCR_TXCRC_MASK                      (0x7FFFU)
++#define CAN_CRCR_TXCRC_SHIFT                     (0U)
++/*! TXCRC - CRC Transmitted
++ */
++#define CAN_CRCR_TXCRC(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_CRCR_TXCRC_SHIFT)) & CAN_CRCR_TXCRC_MASK)
++
++#define CAN_CRCR_MBCRC_MASK                      (0x7F0000U)
++#define CAN_CRCR_MBCRC_SHIFT                     (16U)
++/*! MBCRC - CRC Mailbox
++ */
++#define CAN_CRCR_MBCRC(x)                        (((uint32_t)(((uint32_t)(x)) << CAN_CRCR_MBCRC_SHIFT)) & CAN_CRCR_MBCRC_MASK)
++/*! @} */
++
++/*! @name RXFGMASK - Rx FIFO Global Mask register */
++/*! @{ */
++
++#define CAN_RXFGMASK_FGM_MASK                    (0xFFFFFFFFU)
++#define CAN_RXFGMASK_FGM_SHIFT                   (0U)
++/*! FGM - Rx FIFO Global Mask Bits
++ *  0b00000000000000000000000000000000..The corresponding bit in the filter is "don't care."
++ *  0b00000000000000000000000000000001..The corresponding bit in the filter is checked.
++ */
++#define CAN_RXFGMASK_FGM(x)                      (((uint32_t)(((uint32_t)(x)) << CAN_RXFGMASK_FGM_SHIFT)) & CAN_RXFGMASK_FGM_MASK)
++/*! @} */
++
++/*! @name RXFIR - Rx FIFO Information Register */
++/*! @{ */
++
++#define CAN_RXFIR_IDHIT_MASK                     (0x1FFU)
++#define CAN_RXFIR_IDHIT_SHIFT                    (0U)
++/*! IDHIT - Identifier Acceptance Filter Hit Indicator
++ */
++#define CAN_RXFIR_IDHIT(x)                       (((uint32_t)(((uint32_t)(x)) << CAN_RXFIR_IDHIT_SHIFT)) & CAN_RXFIR_IDHIT_MASK)
++/*! @} */
++
++/*! @name CS - Message Buffer 0 CS Register..Message Buffer 15 CS Register */
++/*! @{ */
++
++#define CAN_CS_TIME_STAMP_MASK                   (0xFFFFU)
++#define CAN_CS_TIME_STAMP_SHIFT                  (0U)
++/*! TIME_STAMP - Free-Running Counter Time stamp. This 16-bit field is a copy of the Free-Running
++ *    Timer, captured for Tx and Rx frames at the time when the beginning of the Identifier field
++ *    appears on the CAN bus.
++ */
++#define CAN_CS_TIME_STAMP(x)                     (((uint32_t)(((uint32_t)(x)) << CAN_CS_TIME_STAMP_SHIFT)) & CAN_CS_TIME_STAMP_MASK)
++
++#define CAN_CS_DLC_MASK                          (0xF0000U)
++#define CAN_CS_DLC_SHIFT                         (16U)
++/*! DLC - Length of the data to be stored/transmitted.
++ */
++#define CAN_CS_DLC(x)                            (((uint32_t)(((uint32_t)(x)) << CAN_CS_DLC_SHIFT)) & CAN_CS_DLC_MASK)
++
++#define CAN_CS_RTR_MASK                          (0x100000U)
++#define CAN_CS_RTR_SHIFT                         (20U)
++/*! RTR - Remote Transmission Request. One/zero for remote/data frame.
++ */
++#define CAN_CS_RTR(x)                            (((uint32_t)(((uint32_t)(x)) << CAN_CS_RTR_SHIFT)) & CAN_CS_RTR_MASK)
++
++#define CAN_CS_IDE_MASK                          (0x200000U)
++#define CAN_CS_IDE_SHIFT                         (21U)
++/*! IDE - ID Extended. One/zero for extended/standard format frame.
++ */
++#define CAN_CS_IDE(x)                            (((uint32_t)(((uint32_t)(x)) << CAN_CS_IDE_SHIFT)) & CAN_CS_IDE_MASK)
++
++#define CAN_CS_SRR_MASK                          (0x400000U)
++#define CAN_CS_SRR_SHIFT                         (22U)
++/*! SRR - Substitute Remote Request. Contains a fixed recessive bit.
++ */
++#define CAN_CS_SRR(x)                            (((uint32_t)(((uint32_t)(x)) << CAN_CS_SRR_SHIFT)) & CAN_CS_SRR_MASK)
++
++#define CAN_CS_CODE_MASK                         (0xF000000U)
++#define CAN_CS_CODE_SHIFT                        (24U)
++/*! CODE - Reserved
++ */
++#define CAN_CS_CODE(x)                           (((uint32_t)(((uint32_t)(x)) << CAN_CS_CODE_SHIFT)) & CAN_CS_CODE_MASK)
++/*! @} */
++
++/* The count of CAN_CS */
++#define CAN_CS_COUNT                             (16U)
++
++/*! @name ID - Message Buffer 0 ID Register..Message Buffer 15 ID Register */
++/*! @{ */
++
++#define CAN_ID_EXT_MASK                          (0x3FFFFU)
++#define CAN_ID_EXT_SHIFT                         (0U)
++/*! EXT - Contains extended (LOW word) identifier of message buffer.
++ */
++#define CAN_ID_EXT(x)                            (((uint32_t)(((uint32_t)(x)) << CAN_ID_EXT_SHIFT)) & CAN_ID_EXT_MASK)
++
++#define CAN_ID_STD_MASK                          (0x1FFC0000U)
++#define CAN_ID_STD_SHIFT                         (18U)
++/*! STD - Contains standard/extended (HIGH word) identifier of message buffer.
++ */
++#define CAN_ID_STD(x)                            (((uint32_t)(((uint32_t)(x)) << CAN_ID_STD_SHIFT)) & CAN_ID_STD_MASK)
++
++#define CAN_ID_PRIO_MASK                         (0xE0000000U)
++#define CAN_ID_PRIO_SHIFT                        (29U)
++/*! PRIO - Local priority. This 3-bit fieldis only used when LPRIO_EN bit is set in MCR and it only
++ *    makes sense for Tx buffers. These bits are not transmitted. They are appended to the regular
++ *    ID to define the transmission priority.
++ */
++#define CAN_ID_PRIO(x)                           (((uint32_t)(((uint32_t)(x)) << CAN_ID_PRIO_SHIFT)) & CAN_ID_PRIO_MASK)
++/*! @} */
++
++/* The count of CAN_ID */
++#define CAN_ID_COUNT                             (16U)
++
++/*! @name WORD0 - Message Buffer 0 WORD0 Register..Message Buffer 15 WORD0 Register */
++/*! @{ */
++
++#define CAN_WORD0_DATA_BYTE_3_MASK               (0xFFU)
++#define CAN_WORD0_DATA_BYTE_3_SHIFT              (0U)
++/*! DATA_BYTE_3 - Data byte 3 of Rx/Tx frame.
++ */
++#define CAN_WORD0_DATA_BYTE_3(x)                 (((uint32_t)(((uint32_t)(x)) << CAN_WORD0_DATA_BYTE_3_SHIFT)) & CAN_WORD0_DATA_BYTE_3_MASK)
++
++#define CAN_WORD0_DATA_BYTE_2_MASK               (0xFF00U)
++#define CAN_WORD0_DATA_BYTE_2_SHIFT              (8U)
++/*! DATA_BYTE_2 - Data byte 2 of Rx/Tx frame.
++ */
++#define CAN_WORD0_DATA_BYTE_2(x)                 (((uint32_t)(((uint32_t)(x)) << CAN_WORD0_DATA_BYTE_2_SHIFT)) & CAN_WORD0_DATA_BYTE_2_MASK)
++
++#define CAN_WORD0_DATA_BYTE_1_MASK               (0xFF0000U)
++#define CAN_WORD0_DATA_BYTE_1_SHIFT              (16U)
++/*! DATA_BYTE_1 - Data byte 1 of Rx/Tx frame.
++ */
++#define CAN_WORD0_DATA_BYTE_1(x)                 (((uint32_t)(((uint32_t)(x)) << CAN_WORD0_DATA_BYTE_1_SHIFT)) & CAN_WORD0_DATA_BYTE_1_MASK)
++
++#define CAN_WORD0_DATA_BYTE_0_MASK               (0xFF000000U)
++#define CAN_WORD0_DATA_BYTE_0_SHIFT              (24U)
++/*! DATA_BYTE_0 - Data byte 0 of Rx/Tx frame.
++ */
++#define CAN_WORD0_DATA_BYTE_0(x)                 (((uint32_t)(((uint32_t)(x)) << CAN_WORD0_DATA_BYTE_0_SHIFT)) & CAN_WORD0_DATA_BYTE_0_MASK)
++/*! @} */
++
++/* The count of CAN_WORD0 */
++#define CAN_WORD0_COUNT                          (16U)
++
++/*! @name WORD1 - Message Buffer 0 WORD1 Register..Message Buffer 15 WORD1 Register */
++/*! @{ */
++
++#define CAN_WORD1_DATA_BYTE_7_MASK               (0xFFU)
++#define CAN_WORD1_DATA_BYTE_7_SHIFT              (0U)
++/*! DATA_BYTE_7 - Data byte 7 of Rx/Tx frame.
++ */
++#define CAN_WORD1_DATA_BYTE_7(x)                 (((uint32_t)(((uint32_t)(x)) << CAN_WORD1_DATA_BYTE_7_SHIFT)) & CAN_WORD1_DATA_BYTE_7_MASK)
++
++#define CAN_WORD1_DATA_BYTE_6_MASK               (0xFF00U)
++#define CAN_WORD1_DATA_BYTE_6_SHIFT              (8U)
++/*! DATA_BYTE_6 - Data byte 6 of Rx/Tx frame.
++ */
++#define CAN_WORD1_DATA_BYTE_6(x)                 (((uint32_t)(((uint32_t)(x)) << CAN_WORD1_DATA_BYTE_6_SHIFT)) & CAN_WORD1_DATA_BYTE_6_MASK)
++
++#define CAN_WORD1_DATA_BYTE_5_MASK               (0xFF0000U)
++#define CAN_WORD1_DATA_BYTE_5_SHIFT              (16U)
++/*! DATA_BYTE_5 - Data byte 5 of Rx/Tx frame.
++ */
++#define CAN_WORD1_DATA_BYTE_5(x)                 (((uint32_t)(((uint32_t)(x)) << CAN_WORD1_DATA_BYTE_5_SHIFT)) & CAN_WORD1_DATA_BYTE_5_MASK)
++
++#define CAN_WORD1_DATA_BYTE_4_MASK               (0xFF000000U)
++#define CAN_WORD1_DATA_BYTE_4_SHIFT              (24U)
++/*! DATA_BYTE_4 - Data byte 4 of Rx/Tx frame.
++ */
++#define CAN_WORD1_DATA_BYTE_4(x)                 (((uint32_t)(((uint32_t)(x)) << CAN_WORD1_DATA_BYTE_4_SHIFT)) & CAN_WORD1_DATA_BYTE_4_MASK)
++/*! @} */
++
++/* The count of CAN_WORD1 */
++#define CAN_WORD1_COUNT                          (16U)
++
++/*! @name RXIMR - Rx Individual Mask Registers */
++/*! @{ */
++
++#define CAN_RXIMR_MI_MASK                        (0xFFFFFFFFU)
++#define CAN_RXIMR_MI_SHIFT                       (0U)
++/*! MI - Individual Mask Bits
++ *  0b00000000000000000000000000000000..The corresponding bit in the filter is "don't care."
++ *  0b00000000000000000000000000000001..The corresponding bit in the filter is checked.
++ */
++#define CAN_RXIMR_MI(x)                          (((uint32_t)(((uint32_t)(x)) << CAN_RXIMR_MI_SHIFT)) & CAN_RXIMR_MI_MASK)
++/*! @} */
++
++/* The count of CAN_RXIMR */
++#define CAN_RXIMR_COUNT                          (16U)
++
++
++/*!
++ * @}
++ */ /* end of group CAN_Register_Masks */
++
++
++/* CAN - Peripheral instance base addresses */
++/** Peripheral CAN0 base address */
++#define CAN0_BASE                                (0x40024000u)
++/** Peripheral CAN0 base pointer */
++#define CAN0                                     ((CAN_Type *)CAN0_BASE)
++/** Array initializer of CAN peripheral base addresses */
++#define CAN_BASE_ADDRS                           { CAN0_BASE }
++/** Array initializer of CAN peripheral base pointers */
++#define CAN_BASE_PTRS                            { CAN0 }
++/** Interrupt vectors for the CAN peripheral type */
++#define CAN_Rx_Warning_IRQS                      { CAN0_Rx_Warning_IRQn }
++#define CAN_Tx_Warning_IRQS                      { CAN0_Tx_Warning_IRQn }
++#define CAN_Wake_Up_IRQS                         { CAN0_Wake_Up_IRQn }
++#define CAN_Error_IRQS                           { CAN0_Error_IRQn }
++#define CAN_Bus_Off_IRQS                         { CAN0_Bus_Off_IRQn }
++#define CAN_ORed_Message_buffer_IRQS             { CAN0_ORed_Message_buffer_IRQn }
++
++/*!
++ * @}
++ */ /* end of group CAN_Peripheral_Access_Layer */
+ 
+ /* ----------------------------------------------------------------------------
+    -- CMP Peripheral Access Layer
+diff --git a/mcux/mcux-sdk/devices/MK22F51212/MK22F51212_features.h b/mcux/mcux-sdk/devices/MK22F51212/MK22F51212_features.h
+index f6d913a..39f515e 100644
+--- a/mcux/mcux-sdk/devices/MK22F51212/MK22F51212_features.h
++++ b/mcux/mcux-sdk/devices/MK22F51212/MK22F51212_features.h
+@@ -73,6 +73,8 @@
+     defined(CPU_MK22FN512VMP12)
+     /* @brief ADC16 availability on the SoC. */
+     #define FSL_FEATURE_SOC_ADC16_COUNT (2)
++    /* @brief FLEXCAN availability on the SoC. */
++    #define FSL_FEATURE_SOC_FLEXCAN_COUNT (1)
+     /* @brief CMP availability on the SoC. */
+     #define FSL_FEATURE_SOC_CMP_COUNT (2)
+     /* @brief CRC availability on the SoC. */
+@@ -247,6 +249,33 @@
+ /* @brief Number of SC1x and Rx register pairs (conversion control and result registers). */
+ #define FSL_FEATURE_ADC16_CONVERSION_CONTROL_COUNT (2)
+ 
++/* FLEXCAN module features */
++
++/* @brief Message buffer size */
++#define FSL_FEATURE_FLEXCAN_HAS_MESSAGE_BUFFER_MAX_NUMBERn(x) (16)
++/* @brief Has doze mode support (register bit field MCR[DOZE]). */
++#define FSL_FEATURE_FLEXCAN_HAS_DOZE_MODE_SUPPORT (0)
++/* @brief Insatnce has doze mode support (register bit field MCR[DOZE]). */
++#define FSL_FEATURE_FLEXCAN_INSTANCE_HAS_DOZE_MODE_SUPPORTn(x) (0)
++/* @brief Has a glitch filter on the receive pin (register bit field MCR[WAKSRC]). */
++#define FSL_FEATURE_FLEXCAN_HAS_GLITCH_FILTER (1)
++/* @brief Has extended interrupt mask and flag register (register IMASK2, IFLAG2). */
++#define FSL_FEATURE_FLEXCAN_HAS_EXTENDED_FLAG_REGISTER (0)
++/* @brief Instance has extended bit timing register (register CBT). */
++#define FSL_FEATURE_FLEXCAN_INSTANCE_HAS_EXTENDED_TIMING_REGISTERn(x) (0)
++/* @brief Has a receive FIFO DMA feature (register bit field MCR[DMA]). */
++#define FSL_FEATURE_FLEXCAN_HAS_RX_FIFO_DMA (0)
++/* @brief Instance has a receive FIFO DMA feature (register bit field MCR[DMA]). */
++#define FSL_FEATURE_FLEXCAN_INSTANCE_HAS_RX_FIFO_DMAn(x) (0)
++/* @brief Has separate message buffer 0 interrupt flag (register bit field IFLAG1[BUF0I]). */
++#define FSL_FEATURE_FLEXCAN_HAS_SEPARATE_BUFFER_0_FLAG (1)
++/* @brief Has bitfield name BUF31TO0M. */
++#define FSL_FEATURE_FLEXCAN_HAS_BUF31TO0M (0)
++/* @brief Number of interrupt vectors. */
++#define FSL_FEATURE_FLEXCAN_INTERRUPT_COUNT (6)
++/* @brief Is affected by errata with ID 5641 (Module does not transmit a message that is enabled to be transmitted at a specific moment during the arbitration process). */
++#define FSL_FEATURE_FLEXCAN_HAS_ERRATA_5641 (0)
++
+ /* CMP module features */
+ 
+ /* @brief Has Trigger mode in CMP (register bit field CR1[TRIGM]). */
+@@ -336,21 +365,21 @@
+ /* FLASH module features */
+ 
+ /* @brief Is of type FTFA. */
+-#define FSL_FEATURE_FLASH_IS_FTFA (1)
++#define FSL_FEATURE_FLASH_IS_FTFA (0)
+ /* @brief Is of type FTFE. */
+-#define FSL_FEATURE_FLASH_IS_FTFE (0)
++#define FSL_FEATURE_FLASH_IS_FTFE (1)
+ /* @brief Is of type FTFL. */
+ #define FSL_FEATURE_FLASH_IS_FTFL (0)
+ /* @brief Has flags indicating the status of the FlexRAM (register bits FCNFG[EEERDY], FCNFG[RAMRDY] and FCNFG[PFLSH]). */
+-#define FSL_FEATURE_FLASH_HAS_FLEX_RAM_FLAGS (0)
++#define FSL_FEATURE_FLASH_HAS_FLEX_RAM_FLAGS (1)
+ /* @brief Has program flash swapping status flag (register bit FCNFG[SWAP]). */
+-#define FSL_FEATURE_FLASH_HAS_PFLASH_SWAPPING_STATUS_FLAG (0)
++#define FSL_FEATURE_FLASH_HAS_PFLASH_SWAPPING_STATUS_FLAG (1)
+ /* @brief Has EEPROM region protection (register FEPROT). */
+-#define FSL_FEATURE_FLASH_HAS_EEROM_REGION_PROTECTION (0)
++#define FSL_FEATURE_FLASH_HAS_EEROM_REGION_PROTECTION (1)
+ /* @brief Has data flash region protection (register FDPROT). */
+-#define FSL_FEATURE_FLASH_HAS_DATA_FLASH_REGION_PROTECTION (0)
++#define FSL_FEATURE_FLASH_HAS_DATA_FLASH_REGION_PROTECTION (1)
+ /* @brief Has flash access control (registers XACCHn, SACCHn, where n is a number, FACSS and FACSN). */
+-#define FSL_FEATURE_FLASH_HAS_ACCESS_CONTROL (1)
++#define FSL_FEATURE_FLASH_HAS_ACCESS_CONTROL (0)
+ /* @brief Has flash cache control in FMC module. */
+ #define FSL_FEATURE_FLASH_HAS_FMC_FLASH_CACHE_CONTROLS (1)
+ /* @brief Has flash cache control in MCM module. */
+@@ -364,13 +393,13 @@
+ /* @brief P-Flash start address. */
+ #define FSL_FEATURE_FLASH_PFLASH_START_ADDRESS (0x00000000)
+ /* @brief P-Flash block count. */
+-#define FSL_FEATURE_FLASH_PFLASH_BLOCK_COUNT (2)
++#define FSL_FEATURE_FLASH_PFLASH_BLOCK_COUNT (4)
+ /* @brief P-Flash block size. */
+ #define FSL_FEATURE_FLASH_PFLASH_BLOCK_SIZE (262144)
+ /* @brief P-Flash sector size. */
+-#define FSL_FEATURE_FLASH_PFLASH_BLOCK_SECTOR_SIZE (2048)
++#define FSL_FEATURE_FLASH_PFLASH_BLOCK_SECTOR_SIZE (4096)
+ /* @brief P-Flash write unit size. */
+-#define FSL_FEATURE_FLASH_PFLASH_BLOCK_WRITE_UNIT_SIZE (4)
++#define FSL_FEATURE_FLASH_PFLASH_BLOCK_WRITE_UNIT_SIZE (8)
+ /* @brief P-Flash data path width. */
+ #define FSL_FEATURE_FLASH_PFLASH_BLOCK_DATA_PATH_WIDTH (8)
+ /* @brief P-Flash block swap feature. */
+diff --git a/mcux/mcux-sdk/devices/MK22F51212/drivers/fsl_clock.h b/mcux/mcux-sdk/devices/MK22F51212/drivers/fsl_clock.h
+index 4f8674b..b2f307e 100644
+--- a/mcux/mcux-sdk/devices/MK22F51212/drivers/fsl_clock.h
++++ b/mcux/mcux-sdk/devices/MK22F51212/drivers/fsl_clock.h
+@@ -175,6 +175,12 @@ extern volatile uint32_t g_xtal32Freq;
+         kCLOCK_Lpuart0 \
+     }
+ 
++/*! @brief Clock ip name array for FLEXCAN. */
++#define FLEXCAN_CLOCKS  \
++    {                   \
++        kCLOCK_Flexcan0 \
++    }
++
+ /*! @brief Clock ip name array for DAC. */
+ #define DAC_CLOCKS               \
+     {                            \
+@@ -347,6 +353,7 @@ typedef enum _clock_ip_name
+ 
+     kCLOCK_Ftf0    = CLK_GATE_DEFINE(0x103CU, 0U),
+     kCLOCK_Dmamux0 = CLK_GATE_DEFINE(0x103CU, 1U),
++    kCLOCK_Flexcan0 = CLK_GATE_DEFINE(0x103CU, 4U),
+     kCLOCK_Ftm3    = CLK_GATE_DEFINE(0x103CU, 6U),
+     kCLOCK_Adc1    = CLK_GATE_DEFINE(0x103CU, 7U),
+     kCLOCK_Dac1    = CLK_GATE_DEFINE(0x103CU, 8U),
+@@ -1124,7 +1131,6 @@ static inline void OSC_SetExtRefClkConfig(OSC_Type *base, oscer_config_t const *
+ 
+     base->CR = reg;
+ 
+-    base->DIV = OSC_DIV_ERPS(config->erclkDiv);
+ }
+ 
+ /*!

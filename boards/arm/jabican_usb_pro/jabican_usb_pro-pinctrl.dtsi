@@ -1,0 +1,35 @@
+#include <nxp/kinetis/MK22FN512VLH12-pinctrl.h>
+#define CAN0_TX_PTA12 KINETIS_MUX('A',12,2)
+#define CAN0_RX_PTA13 KINETIS_MUX('A',13,2)
+
+&pinctrl {
+    uart0_default: uart0_default {
+        group0 {
+            pinmux = <UART0_RX_PTA1>, <UART0_TX_PTA2>;
+            drive-strength = "low";
+            slew-rate = "fast";
+        };
+    };
+
+    uart2_default: uart2_default {
+        group0 {
+            pinmux = <UART2_RX_PTD2>, <UART2_TX_PTD3>;
+            drive-strength = "low";
+            slew-rate = "fast";
+        };
+    };
+
+    flexcan0_default: flexcan0_default {
+        group0 {
+            pinmux = <CAN0_RX_PTA13>;
+            drive-strength = "low";
+            bias-pull-up;
+            slew-rate = "fast";
+        };
+        group1 {
+            pinmux = <CAN0_TX_PTA12>;
+            drive-strength = "low";
+            slew-rate = "fast";
+        };
+    };
+};

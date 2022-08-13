@@ -1,0 +1,25 @@
+if BOARD_JABICAN_USB_PRO
+
+config BOARD
+    default "jabican_usb_pro"
+
+config OSC_XTAL0_FREQ
+    default 8000000
+
+config MCG_PRDIV0
+    default 0x1
+
+config MCG_VDIV0
+    default 0x6
+
+config MCG_FCRDIV
+    default 0
+
+config CAN_MCUX_FLEXCAN
+    default y
+    depends on CAN
+
+config NUM_IRQS
+    default 81
+
+endif # BOARD_JABICAN_USB_PRO

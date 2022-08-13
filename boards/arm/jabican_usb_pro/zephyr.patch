@@ -1,0 +1,14 @@
+diff --git a/soc/arm/nxp_kinetis/k2x/soc.c b/soc/arm/nxp_kinetis/k2x/soc.c
+index 35d1b9d771..78ef94036f 100644
+--- a/soc/arm/nxp_kinetis/k2x/soc.c
++++ b/soc/arm/nxp_kinetis/k2x/soc.c
+@@ -125,6 +125,9 @@ static int fsl_frdm_k22f_init(const struct device *arg)
+ 	/* disable interrupts */
+ 	oldLevel = irq_lock();
+ 
++	/* disable MPU (using MPU_CESR) */
++	*((uint32_t*) 0x4000D000) = 0;
++
+ 	/* release I/O power hold to allow normal run state */
+ 	PMC->REGSC |= PMC_REGSC_ACKISO_MASK;
+ 

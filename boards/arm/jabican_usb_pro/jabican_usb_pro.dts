@@ -1,0 +1,154 @@
+/dts-v1/;
+
+#include <nxp/nxp_k2x.dtsi>
+#include "jabican_usb_pro-pinctrl.dtsi"
+
+/ {
+    model = "JABICAN-USB Pro board";
+    compatible = "nxp,mk22f12", "nxp,k22f", "nxp,k2x";
+    // actually MK22F1M0AVLH12 which has CAN!
+
+    aliases {
+        bootloader-led0 = &led_blue;
+        led0 = &led_red;
+        led1 = &led_green;
+        led2 = &led_blue;
+        sw0 = &btn0;
+        sw1 = &btn1;
+        sw2 = &btn2;
+    };
+
+    chosen {
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+        zephyr,console = &uart0;
+        zephyr,code-partition = &image_0_primary_partition;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led_red: led_red {
+            gpios = <&gpioc 3 GPIO_ACTIVE_LOW>;
+        };
+        led_green: led_green {
+            gpios = <&gpioc 2 GPIO_ACTIVE_LOW>;
+        };
+        led_blue: led_blue {
+            gpios = <&gpioc 1 GPIO_ACTIVE_LOW>;
+        };
+        lin_cmdr_en: lin_cmdr_en {
+            gpios = <&gpiod 4 GPIO_ACTIVE_HIGH>;
+        };
+        lin_pwr_en: lin_pwr_en {
+            gpios = <&gpiod 5 GPIO_ACTIVE_HIGH>;
+        };
+        can_pwr_en: can_pwr_en {
+            gpios = <&gpioa 5 GPIO_ACTIVE_LOW>;
+        };
+    };
+
+    buttons {
+        compatible = "gpio-keys";
+        btn0: btn0 {
+            gpios = <&gpiob 17 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+            label = "BTN0";
+        };
+        btn1: btn1 {
+            gpios = <&gpiob 18 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+            label = "BTN1";
+        };
+        btn2: btn2 {
+            gpios = <&gpiob 19 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+            label = "BTN2";
+        };
+    };
+
+    soc {
+        flexcan0: can@40024000 {
+            compatible = "nxp,kinetis-flexcan";
+            reg = <0x40024000 0x1000>;
+            interrupts = <75 0>, <76 0>, <77 0>, <78 0>, <79 0>, <80 0>;
+            interrupt-names = "mb-0-15", "bus-off", "error", "tx-warning", "rx-warning", "wake-up";
+            clocks = <&sim KINETIS_SIM_BUS_CLK 0x103C 4>;
+            clk-source = <1>;
+            label = "CAN_0";
+            sjw = <1>;
+            sample-point = <875>;
+            status = "disabled";
+        };
+    };
+};
+
+&sim {
+    pllfll-select = <KINETIS_SIM_PLLFLLSEL_MCGPLLCLK>;
+    er32k-select = <KINETIS_SIM_ER32KSEL_RTC>;
+
+    flash_clk {
+        clock-div = <5>;
+    };
+};
+
+&flash0 {
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        boot_partition: partition@0 {
+            label = "mcuboot";
+            reg = <0x00000000 0x00010000>; // 64KiB
+            read-only;
+        };
+        image_0_primary_partition: partition@10000 {
+            label = "image-0";
+            reg = <0x00010000 0x000F0000>; // 960KiB
+        };
+    };
+};
+
+&gpioa {
+    status = "okay";
+};
+
+&gpiob {
+    status = "okay";
+};
+
+&gpioc {
+    status = "okay";
+};
+
+&gpiod {
+    status = "okay";
+};
+
+&gpioe {
+    status = "okay";
+};
+
+&uart0 {
+    status = "okay";
+    current-speed = <115200>;
+    pinctrl-0 = <&uart0_default>;
+    pinctrl-names = "default";
+};
+
+&uart2 {
+    status = "okay";
+    current-speed = <19200>;
+    pinctrl-0 = <&uart2_default>;
+    pinctrl-names = "default";
+};
+
+&flexcan0 {
+    status = "okay";
+    pinctrl-0 = <&flexcan0_default>;
+    pinctrl-names = "default";
+    bus-speed = <125000>;
+};
+
+zephyr_udc0: &usbotg {
+    compatible = "nxp,kinetis-usbd";
+    status = "okay";
+    num-bidir-endpoints = <8>;
+};

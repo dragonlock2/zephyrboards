@@ -1,0 +1,10 @@
+/ {
+    flub {
+        compatible = "test";
+        leds = <&led_red &led_green &led_blue>;
+        buttons = <&btn0 &btn1 &btn2>;
+        usb;
+        uart = <&uart2>;
+        can = <&flexcan0>;
+    };
+};
