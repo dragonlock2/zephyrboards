@@ -43,7 +43,7 @@
             gpios = <&gpiod 5 GPIO_ACTIVE_HIGH>;
         };
         can_pwr_en: can_pwr_en {
-            gpios = <&gpioa 5 GPIO_ACTIVE_LOW>;
+            gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
         };
     };
 
