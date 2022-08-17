@@ -7,7 +7,7 @@
 
 #include <drivers/uart.h>
 #include <drivers/clock_control.h>
-#include <drivers/swm.h>
+#include <zephyrboards/drivers/swm.h>
 
 #include <fsl_usart.h>
 #include <fsl_iocon.h>

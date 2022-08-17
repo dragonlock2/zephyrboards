@@ -2,8 +2,8 @@
 
 #include <nxp/nxp_lpc845.dtsi>
 
-#include <dt-bindings/swm/lpc84x_swm.h>
-#include <dt-bindings/gpio/lpc84x_gpio.h>
+#include <zephyrboards/dt-bindings/swm/lpc84x_swm.h>
+#include <zephyrboards/dt-bindings/gpio/lpc84x_gpio.h>
 
 / {
 	model = "LPC845-BRK Development Board";

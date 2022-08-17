@@ -3,7 +3,7 @@
 #include <devicetree.h>
 #include <device.h>
 
-#include <drivers/swm.h>
+#include <zephyrboards/drivers/swm.h>
 #include <drivers/clock_control.h>
 
 #include <fsl_swm_connections.h>

@@ -2,7 +2,7 @@
 #define ZEPHYRBOARDS_DRIVERS_GPIO_IOCON_MAP_LPC84X_H_
 
 #include <zephyr/types.h>
-#include <dt-bindings/gpio/lpc84x_gpio.h>
+#include <zephyrboards/dt-bindings/gpio/lpc84x_gpio.h>
 
 uint8_t IOCON_MAP[2][32] = {
     {

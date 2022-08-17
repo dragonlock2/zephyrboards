@@ -1,8 +1,8 @@
 #include <arm/armv6-m.dtsi>
 #include <mem.h>
 
-#include <dt-bindings/clock/lpc84x_clock.h>
-#include <dt-bindings/swm/lpc84x_swm.h>
+#include <zephyrboards/dt-bindings/clock/lpc84x_clock.h>
+#include <zephyrboards/dt-bindings/swm/lpc84x_swm.h>
 #include <dt-bindings/gpio/gpio.h>
 
 / {
