@@ -19,8 +19,8 @@ extern "C" {
 enum lin_mode {
     /** Commander mode */
     LIN_COMMANDER,
-    /** Responser mode */
-    LIN_RESPONSER,
+    /** Responder mode */
+    LIN_RESPONDER,
 };
 
 /**
@@ -136,12 +136,6 @@ typedef void (*lin_state_change_callback_t)(const struct device *dev, enum lin_s
 typedef int (*lin_set_mode_t)(const struct device *dev, enum lin_mode mode);
 
 /**
- * @brief Callback API upon setting LIN controller time base
- * See @a lin_set_timebase() for argument description
- */
-typedef int (*lin_set_timebase_t)(const struct device *dev, uint32_t timebase);
-
-/**
  * @brief Callback API upon setting LIN controller bitrate
  * See @a lin_set_bitrate() for argument description
  */
@@ -183,7 +177,6 @@ typedef void(*lin_set_state_change_callback_t)(const struct device *dev,
 
 __subsystem struct lin_driver_api {
     lin_set_mode_t set_mode;
-    lin_set_timebase_t set_timebase;
     lin_set_bitrate_t set_bitrate;
     lin_send_t send;
     lin_receive_t receive;
@@ -208,24 +201,6 @@ __syscall int lin_set_mode(const struct device *dev, enum lin_mode mode);
 static inline int z_impl_lin_set_mode(const struct device *dev, enum lin_mode mode) {
     const struct lin_driver_api *api = (const struct lin_driver_api *)dev->api;
     return api->set_mode(dev, mode);
-}
-
-/**
- * @brief Set the LIN controller time base. Only applies in commander mode.
- *
- * @param dev      Pointer to the device structure for the driver instance.
- * @param timebase Time base in us.
- *
- * @retval 0 if successful.
- * @retval -ENOTSUP time base not supported by LIN controller.
- * @retval -EINVAL time base cannot be met.
- * @retval -EIO General input/output error, failed to set time base.
- */
-__syscall int lin_set_timebase(const struct device *dev, uint32_t timebase);
-
-static inline int z_impl_lin_set_timebase(const struct device *dev, uint32_t timebase) {
-    const struct lin_driver_api *api = (const struct lin_driver_api *)dev->api;
-    return api->set_timebase(dev, timebase);
 }
 
 /**
@@ -334,7 +309,7 @@ static inline int lin_add_rx_filter(const struct device *dev, lin_rx_callback_t 
 /**
  * @brief Wrapper function for adding a message queue for a given filter
  *
- * Wrapper function for @a can_add_rx_filter() which puts received LIN frames
+ * Wrapper function for @a lin_add_rx_filter() which puts received LIN frames
  * matching the filter in a message queue instead of calling a callback.
  *
  * If a frame matches more than one attached filter, the priority of the match
@@ -394,5 +369,7 @@ static inline void lin_set_state_change_callback(const struct device *dev,
 #ifdef __cplusplus
 }
 #endif
+
+#include <syscalls/lin.h>
 
 #endif // ZEPHYRBOARDS_INCLUDE_DRIVERS_LIN_H_

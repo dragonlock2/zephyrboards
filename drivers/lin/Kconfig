@@ -1,0 +1,21 @@
+#
+# LIN options
+#
+menuconfig LIN
+    bool "LIN Drivers"
+    help
+      Enable LIN Driver Configuration
+
+if LIN
+
+module = LIN
+module-str = LIN
+source "subsys/logging/Kconfig.template.log_config"
+
+config LIN_INIT_PRIORITY
+  int "LIN driver init priority"
+  default KERNEL_INIT_PRIORITY_DEVICE
+  help
+    LIN driver device initialization priority.
+
+endif # LIN
