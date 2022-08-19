@@ -171,9 +171,9 @@ typedef void (*lin_remove_rx_filter_t)(const struct device *dev, int filter_id);
  * @brief Callback API upon setting a state change callback
  * See @a lin_set_state_change_callback() for argument description
  */
-typedef void(*lin_set_state_change_callback_t)(const struct device *dev,
-                                               lin_state_change_callback_t callback,
-                                               void *user_data);
+typedef void (*lin_set_state_change_callback_t)(const struct device *dev,
+                                                lin_state_change_callback_t callback,
+                                                void *user_data);
 
 __subsystem struct lin_driver_api {
     lin_set_mode_t set_mode;

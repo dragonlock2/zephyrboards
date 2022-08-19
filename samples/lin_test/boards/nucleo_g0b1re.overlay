@@ -1,0 +1,14 @@
+/ {
+    chosen {
+        zephyr,linbus = &usart1;
+    };
+};
+
+&usart1 {
+    lin0 {
+        compatible = "zephyrboards,lin-uart";
+        status = "okay";
+        bitrate = <19200>;
+        max-wait-percent = <150>;
+    };
+};

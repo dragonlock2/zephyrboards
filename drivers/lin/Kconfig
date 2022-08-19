@@ -18,4 +18,6 @@ config LIN_INIT_PRIORITY
   help
     LIN driver device initialization priority.
 
+rsource "Kconfig.uart"
+
 endif # LIN

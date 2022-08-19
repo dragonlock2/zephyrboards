@@ -1,0 +1,11 @@
+# Common fields for LIN controllers
+
+include: base.yaml
+
+bus: lin
+
+properties:
+    bitrate:
+      type: int
+      required: true
+      description: Initial bitrate to communicate at

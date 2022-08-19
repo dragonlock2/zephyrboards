@@ -1,0 +1,11 @@
+description: Zephyrboards LIN UART driver
+
+compatible: "zephyrboards,lin-uart"
+
+include: lin-controller.yaml
+
+properties:
+    max-wait-percent:
+      type: int
+      default: 140
+      description: Duration as percent of nominal transmission time to allow space between bytes (LIN 2.2A spec is 40% additional)
