@@ -10,6 +10,8 @@ extern "C" {
 #endif
 
 /** @cond INTERNAL_HIDDEN */
+#define LIN_ID_MASK  0x3FU
+#define LIN_NUM_ID   64U
 #define LIN_MAX_DLEN 8U
 /** @endcond */
 
@@ -18,21 +20,9 @@ extern "C" {
  */
 enum lin_mode {
     /** Commander mode */
-    LIN_COMMANDER,
+    LIN_MODE_COMMANDER,
     /** Responder mode */
-    LIN_RESPONDER,
-};
-
-/**
- * @brief LIN controller state
- */
-enum lin_state {
-    /** Break state. (received break, awaiting sync) */
-    LIN_STATE_BREAK,
-    /** Sync state. (received sync, awaiting PID) */
-    LIN_STATE_SYNC,
-    /** PID state. (received PID, awaiting data and checksum) */
-    LIN_STATE_PID,
+    LIN_MODE_RESPONDER,
 };
 
 /**
@@ -98,30 +88,25 @@ struct zlin_filter {
 /**
  * @brief Defines the application callback handler function signature
  *
+ * Note this function may be called in an ISR
+ * 
  * @param dev       Pointer to the device structure for the driver instance.
  * @param error     Status of the performed send operation. See the list of
- *                  return values for @a lin_send() for value descriptions.
- * @param user_data User data provided when the frame was sent.
+ *                  return values for @a lin_send() and @a lin_receive() for value descriptions.
+ * @param user_data User data provided when the frame was sent or received (if commander mode).
  */
 typedef void (*lin_tx_callback_t)(const struct device *dev, int error, void *user_data);
 
 /**
- * @brief Defines the application callback handler function signature for receiving.
+ * @brief Defines the application callback handler function signature for receiving
+ * 
+ * Note this function may be called in an ISR
  *
  * @param dev       Pointer to the device structure for the driver instance.
  * @param frame     Received frame.
  * @param user_data User data provided when the filter was added.
  */
 typedef void (*lin_rx_callback_t)(const struct device *dev, struct zlin_frame *frame, void *user_data);
-
-/**
- * @brief Defines the state change callback handler function signature
- *
- * @param dev       Pointer to the device structure for the driver instance.
- * @param state     State of the LIN controller.
- * @param user_data User data provided the callback was set.
- */
-typedef void (*lin_state_change_callback_t)(const struct device *dev, enum lin_state state, void *user_data);
 
 /**
  * @cond INTERNAL_HIDDEN
@@ -152,7 +137,8 @@ typedef int (*lin_send_t)(const struct device *dev, const struct zlin_frame *fra
  * @brief Callback API upon receiving a LIN frame
  * See @a lin_receive() for argument description
  */
-typedef int (*lin_receive_t)(const struct device *dev, k_timeout_t timeout);
+typedef int (*lin_receive_t)(const struct device *dev, uint8_t id, k_timeout_t timeout,
+                             lin_tx_callback_t callback, void *user_data);
 
 /**
  * @brief Callback API upon adding an RX filter
@@ -167,14 +153,6 @@ typedef int (*lin_add_rx_filter_t)(const struct device *dev, lin_rx_callback_t c
  */
 typedef void (*lin_remove_rx_filter_t)(const struct device *dev, int filter_id);
 
-/**
- * @brief Callback API upon setting a state change callback
- * See @a lin_set_state_change_callback() for argument description
- */
-typedef void (*lin_set_state_change_callback_t)(const struct device *dev,
-                                                lin_state_change_callback_t callback,
-                                                void *user_data);
-
 __subsystem struct lin_driver_api {
     lin_set_mode_t set_mode;
     lin_set_bitrate_t set_bitrate;
@@ -182,13 +160,15 @@ __subsystem struct lin_driver_api {
     lin_receive_t receive;
     lin_add_rx_filter_t add_rx_filter;
     lin_remove_rx_filter_t remove_rx_filter;
-    lin_set_state_change_callback_t set_state_change_callback;
 };
 
 /** @endcond */
 
 /**
  * @brief Set the LIN controller to the given operation mode
+ * 
+ * Sets the LIN controller to the given operation mode. If transitioning from responder to
+ * commander mode, all pending packets to be sent are flushed.
  *
  * @param dev  Pointer to the device structure for the driver instance.
  * @param mode Operation mode.
@@ -225,7 +205,8 @@ static inline int z_impl_lin_set_bitrate(const struct device *dev, uint32_t bitr
  * @brief Queue a LIN frame for transmission on the LIN bus
  *
  * Queue a LIN frame for transmission on the LIN bus with optional timeout and
- * completion callback function.
+ * completion callback function. If a receive filter with the same ID is active, that filter
+ * is ignored until the frame is sent.
  * 
  * In commander mode, queued LIN frames are transmitted in FIFO order.
  * 
@@ -243,6 +224,7 @@ static inline int z_impl_lin_set_bitrate(const struct device *dev, uint32_t bitr
  *
  * @retval 0 if successful.
  * @retval -EINVAL if an invalid parameter was passed to the function.
+ * @retval -ECANCELED if canceled due to a configuration change.
  * @retval -EIO if a general transmit error occurred (e.g. sent/received byte mismatch,
  *              invalid checksum).
  * @retval -EAGAIN on timeout.
@@ -263,20 +245,28 @@ static inline int z_impl_lin_send(const struct device *dev, const struct zlin_fr
  * in commander mode. Use @a lin_add_rx_filter() or @a lin_add_rx_filter_msgq() to retrieve
  * the received frame.
  * 
- * @param dev      Pointer to the device structure for the driver instance.
- * @param timeout  Timeout waiting for a reception completion or ``K_FOREVER``.
+ * @param dev       Pointer to the device structure for the driver instance.
+ * @param id        The ID to initiate the receive from.
+ * @param timeout   Timeout waiting for a reception completion or ``K_FOREVER``.
+ * @param callback  Optional callback for when the frame was received or a
+ *                  transmission error occurred. If ``NULL``, this function is
+ *                  blocking until frame is received.
+ * @param user_data User data to pass to callback function.
  *
  * @retval 0 if successful.
  * @retval -ENOTSUP if not supported or in incorrect mode.
+ * @retval -EINVAL if invalid argument or if no filter added for given id.
  * @retval -EIO if a general transmit error occurred (e.g. sent/received byte mismatch,
- *              invalid checksum).
+ *              invalid checksum, no response).
  * @retval -EAGAIN on timeout.
  */
-__syscall int lin_receive(const struct device *dev, k_timeout_t timeout);
+__syscall int lin_receive(const struct device *dev, uint8_t id, k_timeout_t timeout,
+                          lin_tx_callback_t callback, void *user_data);
 
-static inline int z_impl_lin_receive(const struct device *dev, k_timeout_t timeout) {
+static inline int z_impl_lin_receive(const struct device *dev, uint8_t id, k_timeout_t timeout,
+                                     lin_tx_callback_t callback, void *user_data) {
     const struct lin_driver_api *api = (const struct lin_driver_api *)dev->api;
-    return api->receive(dev, timeout);
+    return api->receive(dev, id, timeout, callback, user_data);
 }
 
 /**
@@ -344,26 +334,6 @@ __syscall void lin_remove_rx_filter(const struct device *dev, int filter_id);
 static inline void z_impl_lin_remove_rx_filter(const struct device *dev, int filter_id) {
     const struct lin_driver_api *api = (const struct lin_driver_api *)dev->api;
     return api->remove_rx_filter(dev, filter_id);
-}
-
-/**
- * @brief Set a callback for LIN controller state change events
- *
- * Set the callback for LIN controller state change events. The callback
- * function will be called in interrupt context.
- *
- * Only one callback can be registered per controller. Calling this function
- * again overrides any previously registered callback.
- *
- * @param dev       Pointer to the device structure for the driver instance.
- * @param callback  Callback function.
- * @param user_data User data to pass to callback function.
- */
-static inline void lin_set_state_change_callback(const struct device *dev,
-                                                 lin_state_change_callback_t callback,
-                                                 void *user_data) {
-    const struct lin_driver_api *api = (const struct lin_driver_api *)dev->api;
-    api->set_state_change_callback(dev, callback, user_data);
 }
 
 #ifdef __cplusplus

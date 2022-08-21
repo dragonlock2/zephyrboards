@@ -1,5 +1,5 @@
 # zephyrboards
-Zephyr RTOS board definitions for extra boards.
+Zephyr RTOS board definitions for extra boards and drivers
 
 ## Setup
 
@@ -19,3 +19,9 @@ Follow https://docs.zephyrproject.org/latest/getting_started/index.html to get d
 | leveler | https://github.com/berkeleyauv/electrical_training | |
 | 6wire | https://github.com/dragonlock2/kicadboards/tree/main/projects/6wire | |
 | efm32wg | https://github.com/dragonlock2/kicadboards/tree/main/breakouts/efm32wg | leuart, spi not working |
+
+## Drivers
+
+| name | notes |
+| ---- | ----- |
+| lin-uart | LIN API also created |

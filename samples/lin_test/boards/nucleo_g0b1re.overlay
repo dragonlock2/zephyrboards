@@ -1,9 +1,3 @@
-/ {
-    chosen {
-        zephyr,linbus = &usart1;
-    };
-};
-
 &usart1 {
     lin0 {
         compatible = "zephyrboards,lin-uart";
