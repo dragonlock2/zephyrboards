@@ -139,7 +139,7 @@
     pinctrl-0 = <&uart2_default>;
     pinctrl-names = "default";
 
-    lin0 {
+    lin0: lin0 {
         compatible = "zephyrboards,lin-uart";
         status = "okay";
         bitrate = <19200>;
