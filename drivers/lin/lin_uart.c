@@ -232,7 +232,6 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                             }
                             lin_uart_clear_isr(uart_dev);
                             lin_uart_release_isr(data);
-                            k_sem_give(&data->msg.lock);
                             data->state = LIN_UART_STATE_IDLE;
                         }
                         break;
@@ -277,7 +276,6 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                                 }
                                 lin_uart_clear_isr(uart_dev);
                                 lin_uart_release_isr(data);
-                                k_sem_give(&data->msg.lock);
                                 data->state = LIN_UART_STATE_IDLE;
                             } else if ((filter->data_len == 0 && data->msg.data_len >= LIN_MAX_DLEN) ||
                                        data->msg.data_len == filter->data_len) {
@@ -414,7 +412,6 @@ lin_uart_irq_fail:
             if (data->msg.cb != NULL) {
                 data->msg.cb(dev, -EIO, data->msg.cb_user_data);
             }
-            k_sem_give(&data->msg.lock);
         }
         data->state = LIN_UART_STATE_IDLE;
     } else { // LIN_MODE_RESPONDER
@@ -444,7 +441,6 @@ static inline void lin_uart_timeout_handler(struct k_timer *timer) {
             if (data->msg.cb != NULL) {
                 data->msg.cb(data->lin_dev, -EIO, data->msg.cb_user_data);
             }
-            k_sem_give(&data->msg.lock);
         }
         data->state = LIN_UART_STATE_IDLE;
     } else { // LIN_MODE_RESPONDER
@@ -561,7 +557,9 @@ static int lin_uart_send(const struct device *dev, const struct zlin_frame *fram
     }
     struct lin_uart_data *data = dev->data;
     if (data->mode == LIN_MODE_COMMANDER) {
-        k_sem_take(&data->lock, K_FOREVER); // technically non-API compliant
+        if (k_sem_take(&data->lock, timeout)) {
+            return -EAGAIN;
+        }
         data->sending          = true;
         data->msg.pid          = PID[frame->id];
         data->msg.data_len     = frame->data_len;
@@ -569,17 +567,13 @@ static int lin_uart_send(const struct device *dev, const struct zlin_frame *fram
         data->msg.cb_user_data = user_data;
         memcpy(data->msg.data, frame->data, frame->data_len);
         data->msg.data[frame->data_len] = lin_uart_checksum(&data->msg, frame->checksum_type);
-        k_sem_init(&data->msg.lock, 0, 1);
         k_sem_give(&data->lock);
         lin_uart_send_break(dev);
-        if (k_sem_take(&data->msg.lock, timeout)) {
-            return -EAGAIN;
-        }
-        return data->msg.retcode;
+        return 0;
     } else { // LIN_MODE_RESPONDER
         struct lin_uart_txmsg *msg = &data->tx_msgs[frame->id];
-        if (k_sem_take(&msg->lock, K_NO_WAIT)) {
-            return -EAGAIN; // technically should be waiting according to API :P
+        if (k_sem_take(&msg->lock, timeout)) {
+            return -EAGAIN;
         }
         msg->pid          = PID[frame->id];
         msg->data_len     = frame->data_len;
@@ -588,11 +582,7 @@ static int lin_uart_send(const struct device *dev, const struct zlin_frame *fram
         memcpy(msg->data, frame->data, frame->data_len);
         msg->data[frame->data_len] = lin_uart_checksum(msg, frame->checksum_type);
         msg->active = true;
-        if (k_sem_take(&msg->lock, timeout)) {
-            return -EAGAIN;
-        }
-        k_sem_give(&msg->lock);
-        return msg->retcode;
+        return 0;
     }
 }
 
@@ -607,18 +597,16 @@ static int lin_uart_receive(const struct device *dev, uint8_t id, k_timeout_t ti
     if (data->mode != LIN_MODE_COMMANDER) {
         return -ENOTSUP;
     }
-    k_sem_take(&data->lock, K_FOREVER); // technically non-API compliant
+    if (k_sem_take(&data->lock, timeout)) {
+        return -EAGAIN;
+    }
     data->sending          = false;
     data->msg.pid          = PID[id];
     data->msg.cb           = callback;
     data->msg.cb_user_data = user_data;
-    k_sem_init(&data->msg.lock, 0, 1);
     k_sem_give(&data->lock);
     lin_uart_send_break(dev);
-    if (k_sem_take(&data->msg.lock, timeout)) {
-        return -EAGAIN;
-    }
-    return data->msg.retcode;
+    return 0;
 }
 
 static int lin_uart_add_rx_filter(const struct device *dev, lin_rx_callback_t callback,

@@ -206,7 +206,8 @@ static inline int z_impl_lin_set_bitrate(const struct device *dev, uint32_t bitr
  *
  * Queue a LIN frame for transmission on the LIN bus with optional timeout and
  * completion callback function. If a receive filter with the same ID is active, that filter
- * is ignored until the frame is sent.
+ * is ignored until the frame is sent. Note that a callback is required to monitor for
+ * frame errors (e.g. -EIO).
  * 
  * In commander mode, queued LIN frames are transmitted in FIFO order.
  * 
@@ -243,7 +244,7 @@ static inline int z_impl_lin_send(const struct device *dev, const struct zlin_fr
  *
  * Initiate the reception of a LIN frame on the LIN bus with optional timeout. Only valid
  * in commander mode. Use @a lin_add_rx_filter() or @a lin_add_rx_filter_msgq() to retrieve
- * the received frame.
+ * the received frame. Note that a callback is required to monitor for frame errors (e.g. -EIO).
  * 
  * @param dev       Pointer to the device structure for the driver instance.
  * @param id        The ID to initiate the receive from.
