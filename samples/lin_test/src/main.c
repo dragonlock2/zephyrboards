@@ -18,7 +18,10 @@ void print_msg(struct zlin_frame *msg) {
 }
 
 int main() {
-    // add automatic filters
+    if (lin_set_bitrate(dev, 19200)) {
+        LOG_ERR("couldn't set bitrate");
+    }
+
     LOG_INF("adding auto length/checksum filter to each id");
     struct zlin_filter filter = {
         .checksum_type = LIN_CHECKSUM_AUTO,
@@ -48,8 +51,9 @@ int main() {
     if (lin_receive(dev, 42, K_MSEC(10), lin_tx_handler, NULL)) {
         LOG_ERR("failed to receive msg in time");
     }
-    k_msgq_get(&msgq, &msg, K_FOREVER);
-    print_msg(&msg);
+    if (k_msgq_get(&msgq, &msg, K_MSEC(500)) == 0) {
+        print_msg(&msg);
+    }
 
     LOG_INF("doing things as responder");
     if (lin_set_mode(dev, LIN_MODE_RESPONDER)) {

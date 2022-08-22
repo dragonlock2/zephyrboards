@@ -57,6 +57,8 @@ struct lin_uart_config {
 };
 
 struct lin_uart_data {
+    const struct device *lin_dev; // for timeout handler
+
     struct k_sem lock;
     bool irq_has_lock;
 
@@ -74,7 +76,8 @@ struct lin_uart_data {
     struct lin_uart_txmsg msg; // also used for receiving
     uint8_t tx_idx;
 
-    // TODO precomputed delay times, timers
+    struct k_timer timer;
+    k_timeout_t timeout;
 };
 
 /* private helpers */
@@ -103,7 +106,7 @@ static inline bool lin_uart_checksum_match(struct lin_uart_txmsg *msg, enum lin_
 static inline void lin_uart_send_break(const struct device *dev) {
     const struct lin_uart_config *cfg = dev->config;
     struct lin_uart_data *data = dev->data;
-    data->uart_cfg.baudrate = data->bitrate / 2; // ~16 bit break (LIN requires 13)
+    data->uart_cfg.baudrate = data->bitrate * 9 / 13; // ~13 bit break
     if (uart_configure(cfg->uart_dev, &data->uart_cfg)) {
         LOG_ERR("unable to config for a break");
     }
@@ -115,8 +118,13 @@ static inline void lin_uart_send_break(const struct device *dev) {
     data->irq_has_lock = true;
     uart_poll_out(cfg->uart_dev, LIN_UART_BREAK);
     data->state = LIN_UART_STATE_BREAK;
+    k_timer_start(&data->timer, data->timeout, K_FOREVER);
 }
 
+/* NOTE: On some UART after a baudrate change, there's a latency. On STM32 and NXP,
+ * it outputs one idle char at the new baudrate which puts us just within the 40%
+ * margin LIN specifies.
+ */
 static inline void lin_uart_set_nominal_bitrate(const struct device *dev) {
     const struct lin_uart_config *cfg = dev->config;
     struct lin_uart_data *data = dev->data;
@@ -145,8 +153,11 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
     const struct device *dev = lin_dev;
     struct lin_uart_data *data = dev->data;
 
+    unsigned int key = irq_lock(); // prevent concurrency issues w/ timer
+
     if (!data->irq_has_lock && k_sem_take(&data->lock, K_NO_WAIT) != 0) {
         lin_uart_clear_isr(uart_dev);
+        irq_unlock(key);
         return;
     }
     data->irq_has_lock = true;
@@ -164,6 +175,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                     err & (UART_ERROR_FRAMING | UART_BREAK) &&
                     bite == LIN_UART_BREAK) { // does it always receive a 0 on break?
                     data->state = LIN_UART_STATE_SYNC;
+                    k_timer_start(&data->timer, data->timeout, K_FOREVER);
                 } else {
                     LOG_ERR("unexpected error byte");
                     goto lin_uart_irq_fail;
@@ -213,6 +225,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                         if (data->tx_idx <= data->msg.data_len) { // <= bc of checksum
                             uart_poll_out(uart_dev, data->msg.data[data->tx_idx]);
                         } else {
+                            k_timer_stop(&data->timer);
                             data->msg.retcode = 0;
                             if (data->msg.cb != NULL) {
                                 data->msg.cb(dev, 0, data->msg.cb_user_data);
@@ -248,6 +261,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                                     break;
                             }
                             if (cc || ec) {
+                                k_timer_stop(&data->timer);
                                 struct zlin_frame msg = {
                                     .id = data->msg.pid & LIN_ID_MASK,
                                     .checksum_type = cc ? LIN_CHECKSUM_CLASSIC : LIN_CHECKSUM_ENHANCED,
@@ -298,6 +312,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                         }
                         if (data->tx_msgs[id].active) {
                             data->resp_msg = &data->tx_msgs[id];
+                            data->resp_msg->active = false;
                             data->tx_idx = 0;
                             uart_poll_out(uart_dev, data->resp_msg->data[0]);
                             data->state = LIN_UART_STATE_SEND_RESPONSE;
@@ -306,6 +321,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                             data->msg.data_len = 0;
                             data->state = LIN_UART_STATE_RECV_RESPONSE;
                         } else {
+                            k_timer_stop(&data->timer);
                             lin_uart_clear_isr(uart_dev);
                             lin_uart_release_isr(data);
                             data->state = LIN_UART_STATE_BREAK;
@@ -321,7 +337,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                         if (data->tx_idx <= data->resp_msg->data_len) { // <= bc of checksum
                             uart_poll_out(uart_dev, data->resp_msg->data[data->tx_idx]);
                         } else {
-                            data->resp_msg->active = false;
+                            k_timer_stop(&data->timer);
                             data->resp_msg->retcode = 0;
                             if (data->resp_msg->cb != NULL) {
                                 data->resp_msg->cb(dev, 0, data->resp_msg->cb_user_data);
@@ -357,6 +373,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                                     break;
                             }
                             if (cc || ec) {
+                                k_timer_stop(&data->timer);
                                 struct zlin_frame msg = {
                                     .id = data->msg.pid & LIN_ID_MASK,
                                     .checksum_type = cc ? LIN_CHECKSUM_CLASSIC : LIN_CHECKSUM_ENHANCED,
@@ -387,8 +404,10 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
             }
         }
     }
+    irq_unlock(key);
     return;
 lin_uart_irq_fail:
+    k_timer_stop(&data->timer);
     if (data->mode == LIN_MODE_COMMANDER) {
         if (data->state != LIN_UART_STATE_IDLE) {
             data->msg.retcode = -EIO;
@@ -411,11 +430,47 @@ lin_uart_irq_fail:
     }
     lin_uart_clear_isr(uart_dev);
     lin_uart_release_isr(data);
+    irq_unlock(key);
+}
 
-    // TODO the frame length watchdog timeout
-        // irq lock and unlock
-        // if sending, basically run lin_uart_irq_fail
-        // set state back to idle/break
+static inline void lin_uart_timeout_handler(struct k_timer *timer) {
+    struct lin_uart_data *data = CONTAINER_OF(timer, struct lin_uart_data, timer);
+
+    unsigned int key = irq_lock(); // prevent concurrency issues with UART IRQ
+    LOG_ERR("frame timeout, resetting to idle state");
+    if (data->mode == LIN_MODE_COMMANDER) {
+        if (data->state != LIN_UART_STATE_IDLE) {
+            data->msg.retcode = -EIO;
+            if (data->msg.cb != NULL) {
+                data->msg.cb(data->lin_dev, -EIO, data->msg.cb_user_data);
+            }
+            k_sem_give(&data->msg.lock);
+        }
+        data->state = LIN_UART_STATE_IDLE;
+    } else { // LIN_MODE_RESPONDER
+        if (data->state == LIN_UART_STATE_SEND_RESPONSE) {
+            data->resp_msg->active = false;
+            data->resp_msg->retcode = -EIO;
+            if (data->resp_msg->cb != NULL) {
+                data->resp_msg->cb(data->lin_dev, -EIO, data->resp_msg->cb_user_data);
+            }
+            k_sem_give(&data->resp_msg->lock);
+        }
+        data->state = LIN_UART_STATE_BREAK;
+    }
+    lin_uart_release_isr(data);
+    irq_unlock(key);
+}
+
+static inline void lin_uart_compute_timeout(const struct device *dev) {
+    /* Technically non-conformant to LIN spec since it's just a worst case timeout that
+     * measures header and response together.
+     */
+    const struct lin_uart_config *cfg = dev->config;
+    struct lin_uart_data *data = dev->data;
+
+    // 124 bits = 14+10+10+10*9 (break, sync, pid, data, checksum)
+    data->timeout = K_USEC(100 * 124 * cfg->max_wait_percent / (data->bitrate / 100));
 }
 
 static int lin_uart_init(const struct device *dev) {
@@ -426,6 +481,8 @@ static int lin_uart_init(const struct device *dev) {
         return -ENODEV;
     }
 
+    data->lin_dev = dev;
+
     k_sem_init(&data->lock, 1, 1);
     for (int i = 0; i < LIN_NUM_ID; i++) {
         k_sem_init(&data->tx_msgs[i].lock, 1, 1);
@@ -433,7 +490,8 @@ static int lin_uart_init(const struct device *dev) {
         data->rx_filters[i].active = false;
     }
 
-    // TODO compute timeout
+    k_timer_init(&data->timer, lin_uart_timeout_handler, NULL);
+    lin_uart_compute_timeout(dev);
 
     if (uart_configure(cfg->uart_dev, &data->uart_cfg)) {
         return -EIO;
@@ -488,9 +546,7 @@ static int lin_uart_set_bitrate(const struct device *dev, uint32_t bitrate) {
         return -EIO;
     }
     data->bitrate = bitrate;
-
-    // TODO compute new timeout
-
+    lin_uart_compute_timeout(dev);
     k_sem_give(&data->lock);
     return 0;
 }
