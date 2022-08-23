@@ -160,9 +160,12 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
         irq_unlock(key);
         return;
     }
+
+    bool spurious = true;
     data->irq_has_lock = true;
     while (uart_irq_update(uart_dev) && uart_irq_is_pending(uart_dev)) {
         if (uart_irq_rx_ready(uart_dev)) {
+            spurious = false;
             uint8_t bite = 0;
             if (uart_fifo_read(uart_dev, &bite, 1) < 0) {
                 LOG_ERR("failed to read uart?!");
@@ -400,6 +403,14 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                         break;
                 }
             }
+        }
+    }
+    if (spurious) {
+        if ((data->mode == LIN_MODE_COMMANDER && data->state == LIN_UART_STATE_IDLE) ||
+            (data->mode == LIN_MODE_RESPONDER && data->state == LIN_UART_STATE_BREAK)) {
+            // NXP driver seems to cause lots of these...
+            LOG_ERR("spurious interrupt, unknown cause");
+            lin_uart_release_isr(data);
         }
     }
     irq_unlock(key);
