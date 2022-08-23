@@ -466,7 +466,7 @@ static inline void lin_uart_compute_timeout(const struct device *dev) {
     struct lin_uart_data *data = dev->data;
 
     // 124 bits = 14+10+10+10*9 (break, sync, pid, data, checksum)
-    data->timeout = K_USEC(100 * 124 * cfg->max_wait_percent / (data->bitrate / 100));
+    data->timeout = K_USEC(10000 * 124 * cfg->max_wait_percent / data->bitrate);
 }
 
 static int lin_uart_init(const struct device *dev) {
@@ -533,6 +533,9 @@ static int lin_uart_set_mode(const struct device *dev, enum lin_mode mode) {
 }
 
 static int lin_uart_set_bitrate(const struct device *dev, uint32_t bitrate) {
+    if (bitrate == 0 || bitrate > CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC) {
+        return -EINVAL; // NXP's driver has a divide by zero...
+    }
     const struct lin_uart_config *cfg = dev->config;
     struct lin_uart_data *data = dev->data;
     k_sem_take(&data->lock, K_FOREVER);
