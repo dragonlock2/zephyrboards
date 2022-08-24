@@ -1,3 +1,22 @@
+diff --git a/drivers/serial/uart_mcux.c b/drivers/serial/uart_mcux.c
+index 455470121c..f9086c3ef9 100644
+--- a/drivers/serial/uart_mcux.c
++++ b/drivers/serial/uart_mcux.c
+@@ -162,9 +162,11 @@ static int uart_mcux_err_check(const struct device *dev)
+ 		err |= UART_ERROR_FRAMING;
+ 	}
+ 
+-	UART_ClearStatusFlags(config->base, kUART_RxOverrunFlag |
+-					    kUART_ParityErrorFlag |
+-					    kUART_FramingErrorFlag);
++	if (err) {
++		UART_ClearStatusFlags(config->base, kUART_RxOverrunFlag |
++											kUART_ParityErrorFlag |
++											kUART_FramingErrorFlag);
++	}
+ 
+ 	return err;
+ }
 diff --git a/soc/arm/nxp_kinetis/k2x/soc.c b/soc/arm/nxp_kinetis/k2x/soc.c
 index 35d1b9d771..78ef94036f 100644
 --- a/soc/arm/nxp_kinetis/k2x/soc.c

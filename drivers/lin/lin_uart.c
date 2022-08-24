@@ -166,12 +166,13 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
     while (uart_irq_update(uart_dev) && uart_irq_is_pending(uart_dev)) {
         if (uart_irq_rx_ready(uart_dev)) {
             spurious = false;
+            // On MK22, doing the read first would actually clear the errors
+            int err = uart_err_check(uart_dev);
             uint8_t bite = 0;
             if (uart_fifo_read(uart_dev, &bite, 1) < 0) {
                 LOG_ERR("failed to read uart?!");
                 goto lin_uart_irq_fail;
             }
-            int err = uart_err_check(uart_dev);
             if (err > 0) {
                 if (data->mode == LIN_MODE_RESPONDER &&
                     data->state == LIN_UART_STATE_BREAK &&
@@ -187,7 +188,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                 switch (data->state) {
                     case LIN_UART_STATE_BREAK:
                         if (bite != LIN_UART_BREAK) {
-                            LOG_ERR("break mismatch");
+                            LOG_ERR("break mismatch 0x%x", bite);
                             goto lin_uart_irq_fail;
                         }
                         lin_uart_set_nominal_bitrate(dev);
@@ -197,7 +198,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
 
                     case LIN_UART_STATE_SYNC:
                         if (bite != LIN_UART_SYNC) {
-                            LOG_ERR("sync mismatch");
+                            LOG_ERR("sync mismatch 0x%x", bite);
                             goto lin_uart_irq_fail;
                         }
                         uart_poll_out(uart_dev, data->msg.pid);
@@ -206,7 +207,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
 
                     case LIN_UART_STATE_PID:
                         if (bite != data->msg.pid) {
-                            LOG_ERR("pid mismatch");
+                            LOG_ERR("pid mismatch 0x%x", bite);
                             goto lin_uart_irq_fail;
                         }
                         if (data->sending) {
@@ -221,7 +222,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
 
                     case LIN_UART_STATE_SEND_RESPONSE:
                         if (bite != data->msg.data[data->tx_idx]) {
-                            LOG_ERR("data/checksum byte mismatch");
+                            LOG_ERR("data/checksum byte mismatch 0x%x", bite);
                             goto lin_uart_irq_fail;
                         }
                         data->tx_idx++;
@@ -299,7 +300,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                 switch (data->state) {
                     case LIN_UART_STATE_SYNC:
                         if (bite != LIN_UART_SYNC) {
-                            LOG_ERR("invalid sync");
+                            LOG_ERR("invalid sync 0x%x", bite);
                             goto lin_uart_irq_fail;
                         }
                         data->state = LIN_UART_STATE_PID;
@@ -308,7 +309,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                     case LIN_UART_STATE_PID:
                         id = bite & LIN_ID_MASK;
                         if (bite != PID[id]) {
-                            LOG_ERR("invalid pid");
+                            LOG_ERR("invalid pid 0x%x", bite);
                             goto lin_uart_irq_fail;
                         }
                         if (data->tx_msgs[id].active) {
@@ -331,7 +332,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
 
                     case LIN_UART_STATE_SEND_RESPONSE:
                         if (bite != data->resp_msg->data[data->tx_idx]) {
-                            LOG_ERR("data/checksum byte mismatch");
+                            LOG_ERR("data/checksum byte mismatch 0x%x", bite);
                             goto lin_uart_irq_fail;
                         }
                         data->tx_idx++;
@@ -674,6 +675,7 @@ static struct lin_driver_api lin_uart_api = {
             .flow_ctrl = UART_CFG_FLOW_CTRL_NONE,               \
         },                                                      \
         .mode = LIN_MODE_COMMANDER,                             \
+        .state = LIN_UART_STATE_IDLE,                           \
     };                                                          \
                                                                 \
     DEVICE_DT_INST_DEFINE(n,                                    \
