@@ -245,6 +245,7 @@ static inline int z_impl_lin_send(const struct device *dev, const struct zlin_fr
  * Initiate the reception of a LIN frame on the LIN bus with optional timeout. Only valid
  * in commander mode. Use @a lin_add_rx_filter() or @a lin_add_rx_filter_msgq() to retrieve
  * the received frame. Note that a callback is required to monitor for frame errors (e.g. -EIO).
+ * The TX callback is guaranteed to be called after the RX callback.
  * 
  * @param dev       Pointer to the device structure for the driver instance.
  * @param id        The ID to initiate the receive from.
