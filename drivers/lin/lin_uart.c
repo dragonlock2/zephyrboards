@@ -35,11 +35,9 @@ struct lin_uart_txmsg {
     bool active;
     uint8_t pid;
     uint8_t data_len; // just data section, no checksum
-    uint8_t res; // padding
     uint8_t data[LIN_MAX_DLEN + 1]; // one extra for checksum
     lin_tx_callback_t cb;
     void *cb_user_data;
-    int retcode;
     struct k_sem lock;
 };
 
@@ -234,7 +232,6 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                             if (data->timed_out) {
                                 goto lin_uart_irq_fail;
                             }
-                            data->msg.retcode = 0;
                             if (data->msg.cb != NULL) {
                                 data->msg.cb(dev, 0, data->msg.cb_user_data);
                             }
@@ -278,7 +275,6 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                                     .data_len = data->msg.data_len,
                                 };
                                 memcpy(msg.data, data->msg.data, msg.data_len);
-                                data->msg.retcode = 0;
                                 if (data->msg.cb != NULL) {
                                     data->msg.cb(dev, 0, data->msg.cb_user_data);
                                 }
@@ -304,6 +300,7 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                 }
             } else { // LIN_MODE_RESPONDER
                 uint8_t id;
+                bool got_lock;
                 switch (data->state) {
                     case LIN_UART_STATE_SYNC:
                         if (bite != LIN_UART_SYNC) {
@@ -319,17 +316,24 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                             LOG_ERR("invalid pid 0x%x", bite);
                             goto lin_uart_irq_fail;
                         }
-                        if (data->tx_msgs[id].active) {
+                        got_lock = k_sem_take(&data->tx_msgs[id].lock, K_NO_WAIT) == 0;
+                        if (got_lock && data->tx_msgs[id].active) {
                             data->resp_msg = &data->tx_msgs[id];
                             data->resp_msg->active = false;
                             data->tx_idx = 0;
                             uart_poll_out(uart_dev, data->resp_msg->data[0]);
                             data->state = LIN_UART_STATE_SEND_RESPONSE;
                         } else if (data->rx_filters[id].active) {
+                            if (got_lock) {
+                                k_sem_give(&data->tx_msgs[id].lock);
+                            }
                             data->msg.pid = bite;
                             data->msg.data_len = 0;
                             data->state = LIN_UART_STATE_RECV_RESPONSE;
                         } else {
+                            if (got_lock) {
+                                k_sem_give(&data->tx_msgs[id].lock);
+                            }
                             k_timer_stop(&data->timer);
                             lin_uart_clear_isr(uart_dev);
                             lin_uart_release_isr(data);
@@ -350,7 +354,6 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
                             if (data->timed_out) {
                                 goto lin_uart_irq_fail;
                             }
-                            data->resp_msg->retcode = 0;
                             if (data->resp_msg->cb != NULL) {
                                 data->resp_msg->cb(dev, 0, data->resp_msg->cb_user_data);
                             }
@@ -443,7 +446,6 @@ lin_uart_irq_fail:
     } else {
         if (data->mode == LIN_MODE_COMMANDER) {
             if (data->state != LIN_UART_STATE_IDLE) {
-                data->msg.retcode = -EIO;
                 if (data->msg.cb != NULL) {
                     data->msg.cb(dev, -EIO, data->msg.cb_user_data);
                 }
@@ -451,8 +453,6 @@ lin_uart_irq_fail:
             data->state = LIN_UART_STATE_IDLE;
         } else { // LIN_MODE_RESPONDER
             if (data->state == LIN_UART_STATE_SEND_RESPONSE) {
-                data->resp_msg->active = false;
-                data->resp_msg->retcode = -EIO;
                 if (data->resp_msg->cb != NULL) {
                     data->resp_msg->cb(dev, -EIO, data->resp_msg->cb_user_data);
                 }
@@ -472,7 +472,6 @@ static inline void lin_uart_timeout_handler(struct k_timer *timer) {
     LOG_ERR("frame timeout, resetting to idle state");
     if (data->mode == LIN_MODE_COMMANDER) {
         if (data->state != LIN_UART_STATE_IDLE) {
-            data->msg.retcode = -EIO;
             if (data->msg.cb != NULL) {
                 data->msg.cb(data->lin_dev, -EIO, data->msg.cb_user_data);
             }
@@ -480,8 +479,6 @@ static inline void lin_uart_timeout_handler(struct k_timer *timer) {
         data->state = LIN_UART_STATE_IDLE;
     } else { // LIN_MODE_RESPONDER
         if (data->state == LIN_UART_STATE_SEND_RESPONSE) {
-            data->resp_msg->active = false;
-            data->resp_msg->retcode = -EIO;
             if (data->resp_msg->cb != NULL) {
                 data->resp_msg->cb(data->lin_dev, -EIO, data->resp_msg->cb_user_data);
             }
@@ -546,13 +543,13 @@ static int lin_uart_set_mode(const struct device *dev, enum lin_mode mode) {
             data->mode = LIN_MODE_COMMANDER;
             data->state = LIN_UART_STATE_IDLE;
             for (int i = 0; i < LIN_NUM_ID; i++) {
-                if (data->tx_msgs[i].active) {
-                    data->tx_msgs[i].active = false;
-                    if (data->tx_msgs[i].cb != NULL) {
-                        data->tx_msgs[i].cb(dev, -ECANCELED, data->tx_msgs[i].cb_user_data);
-                    }
-                    k_sem_give(&data->tx_msgs[i].lock);
+                struct lin_uart_txmsg *msg = &data->tx_msgs[i];
+                k_sem_take(&msg->lock, K_FOREVER);
+                if (msg->active && msg->cb != NULL) {
+                    msg->cb(dev, -ECANCELED, msg->cb_user_data);
                 }
+                msg->active = false;
+                k_sem_give(&msg->lock);
             }
             break;
 
@@ -616,6 +613,9 @@ static int lin_uart_send(const struct device *dev, const struct zlin_frame *fram
         if (k_sem_take(&msg->lock, timeout)) {
             return -EAGAIN;
         }
+        if (msg->active && msg->cb != NULL) {
+            msg->cb(dev, -ECANCELED, msg->cb_user_data);
+        }
         msg->pid          = PID[frame->id];
         msg->data_len     = frame->data_len;
         msg->cb           = callback;
@@ -623,6 +623,7 @@ static int lin_uart_send(const struct device *dev, const struct zlin_frame *fram
         memcpy(msg->data, frame->data, frame->data_len);
         msg->data[frame->data_len] = lin_uart_checksum(msg, frame->checksum_type);
         msg->active = true;
+        k_sem_give(&msg->lock);
         return 0;
     }
 }

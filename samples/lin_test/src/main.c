@@ -64,9 +64,18 @@ int main() {
         LOG_ERR("failed to send msg in time");
     }
 
-    LOG_INF("just sniffing msgs now");
+    LOG_INF("just writing an incrementing counter to ID 42");
+    struct zlin_frame msg2 = {
+        .id = 42,
+        .checksum_type = LIN_CHECKSUM_ENHANCED,
+        .data_len = 1,
+        .data = {0x00},
+    };
     while (true) {
-        k_msgq_get(&msgq, &msg, K_FOREVER);
-        print_msg(&msg);
+        msg2.data[0]++;
+        if (lin_send(dev, &msg2, K_MSEC(50), lin_tx_handler, NULL)) {
+            LOG_ERR("failed to put message in queue");
+        }
+        k_msleep(500);
     }
 }

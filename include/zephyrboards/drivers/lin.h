@@ -213,7 +213,8 @@ static inline int z_impl_lin_set_bitrate(const struct device *dev, uint32_t bitr
  * 
  * In responder mode, queued LIN frames are transmitted in the order requested
  * by the commander. When queueing multiple LIN frames with the same PID, they
- * are transmitted in FIFO order.
+ * are transmitted in FIFO order. If a queue is full, the driver may cancel any
+ * pending message and replace it with the new updated one.
  * 
  * @param dev       Pointer to the device structure for the driver instance.
  * @param frame     LIN frame to transmit.
