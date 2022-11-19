@@ -3,8 +3,4 @@ if BOARD_NOGUSB
 config BOARD
 	default "nogusb"
 
-choice CAN_STM32FD_CLOCK_SOURCE
-	default CAN_STM32FD_CLOCK_SOURCE_PCLK1
-endchoice
-
 endif # BOARD_NOGUSB

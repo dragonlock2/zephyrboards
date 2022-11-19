@@ -1,6 +1,6 @@
 #include "common.h"
-#include <drivers/adc.h>
-#include <logging/log.h>
+#include <zephyr/drivers/adc.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(adc_test, CONFIG_LOG_DEFAULT_LEVEL);
 
 #if DT_HAS_COMPAT_STATUS_OKAY(test_adc)
@@ -36,14 +36,13 @@ static void adc_set_test(const struct device *adc, uint8_t *channels,
     }
 }
 
-#define RUN_ADC_SET(id)                                                          \
-    const struct device *adc##id = DEVICE_DT_GET(DT_PROP(id, device));           \
-    uint8_t chans##id[] = DT_PROP(id, channels);                                 \
-    size_t num_chans##id = DT_PROP_LEN(id, channels);                            \
-    uint32_t res##id = DT_PROP(id, resolution);                                  \
-    uint32_t ref##id = DT_PROP(id, reference_voltage_mv);                        \
-    char name##id[] = DT_PROP(id, label);                                        \
-    adc_set_test(adc##id, chans##id, num_chans##id, res##id, ref##id, name##id); \
+#define RUN_ADC_SET(id)                                                     \
+    const struct device *adc##id = DEVICE_DT_GET(DT_PROP(id, device));      \
+    uint8_t chans##id[] = DT_PROP(id, channels);                            \
+    size_t num_chans##id = DT_PROP_LEN(id, channels);                       \
+    uint32_t res##id = DT_PROP(id, resolution);                             \
+    uint32_t ref##id = DT_PROP(id, reference_voltage_mv);                   \
+    adc_set_test(adc##id, chans##id, num_chans##id, res##id, ref##id, #id); \
 
 static int adc_test(const struct device *arg) {
     LOG_INF("starting ADC test");

@@ -134,11 +134,10 @@ zephyr_udc0: &usbotg_fs {
     pinctrl-names = "default";
     clock-frequency = <I2C_BITRATE_FAST>;
 
-    lsm6dsl@1 {
+    lsm6dsl@6a {
         compatible = "st,lsm6dsl";
         reg = <0x6a>;
         irq-gpios = <&gpiob 8 GPIO_ACTIVE_HIGH>, <&gpiob 9 GPIO_ACTIVE_HIGH>;
-        label = "LSM6DSL_I2C";
     };
 };
 

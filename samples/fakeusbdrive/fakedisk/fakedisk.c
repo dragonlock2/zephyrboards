@@ -1,7 +1,7 @@
-#include <device.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/disk.h>
+#include <zephyr/logging/log.h>
 #include <errno.h>
-#include <drivers/disk.h>
-#include <logging/log.h>
 
 #include "fakedisk.h"
 

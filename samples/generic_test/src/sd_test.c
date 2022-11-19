@@ -1,11 +1,11 @@
 #include "common.h"
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(sd_test, CONFIG_LOG_DEFAULT_LEVEL);
 
 #if DT_PROP(TEST_NODE, sd)
 
-#include <storage/disk_access.h>
-#include <fs/fs.h>
+#include <zephyr/storage/disk_access.h>
+#include <zephyr/fs/fs.h>
 #include <ff.h>
 
 int sd_test(void) {

@@ -3,10 +3,10 @@
 /* Inspired by nxp,kinetis-uart */
 
 #include <errno.h>
-#include <device.h>
+#include <zephyr/device.h>
 
-#include <drivers/uart.h>
-#include <drivers/clock_control.h>
+#include <zephyr/drivers/uart.h>
+#include <zephyr/drivers/clock_control.h>
 #include <zephyrboards/drivers/swm.h>
 
 #include <fsl_usart.h>

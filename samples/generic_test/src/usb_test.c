@@ -1,6 +1,6 @@
 #include "common.h"
-#include <usb/usb_device.h>
-#include <logging/log.h>
+#include <zephyr/usb/usb_device.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(usb_test, CONFIG_LOG_DEFAULT_LEVEL);
 
 #if DT_PROP(TEST_NODE, usb)

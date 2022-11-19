@@ -1,6 +1,6 @@
 #include "common.h"
-#include <drivers/i2c.h>
-#include <logging/log.h>
+#include <zephyr/drivers/i2c.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(i2c_test, CONFIG_LOG_DEFAULT_LEVEL);
 
 #if DT_NODE_HAS_PROP(TEST_NODE, i2c)

@@ -1,13 +1,13 @@
 #define DT_DRV_COMPAT nxp_lpc84x_syscon
 
-#include <devicetree.h>
-#include <device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/device.h>
 
-#include <drivers/clock_control.h>
+#include <zephyr/drivers/clock_control.h>
 #include <fsl_clock.h>
 
 #define LOG_LEVEL CONFIG_CLOCK_CONTROL_LOG_LEVEL
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(clock_control);
 
 static int lpc84x_syscon_on(const struct device *dev,

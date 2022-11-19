@@ -1,6 +1,6 @@
 #include "fourwire.h"
 
-#include <drivers/i2c.h>
+#include <zephyr/drivers/i2c.h>
 #include <math.h>
 #include <stdlib.h>
 

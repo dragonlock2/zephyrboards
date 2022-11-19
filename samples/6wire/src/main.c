@@ -1,7 +1,7 @@
-#include <zephyr.h>
-#include <drivers/gpio.h>
-#include <drivers/pwm.h>
-#include <usb/usb_device.h>
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/pwm.h>
+#include <zephyr/usb/usb_device.h>
 #include <math.h>
 
 #include "fourwire.h"

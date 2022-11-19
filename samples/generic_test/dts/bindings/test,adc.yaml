@@ -20,7 +20,3 @@ properties:
   reference-voltage-mv:
     type: int
     default: 3300
-
-  label:
-    type: string
-    default: "some ADC"

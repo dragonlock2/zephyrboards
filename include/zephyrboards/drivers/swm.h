@@ -1,7 +1,7 @@
 #ifndef ZEPHYRBOARDS_INCLUDE_DRIVERS_SWM_H_
 #define ZEPHYRBOARDS_INCLUDE_DRIVERS_SWM_H_
 
-#include <device.h>
+#include <zephyr/device.h>
 
 #ifdef __cplusplus
 extern "C" {

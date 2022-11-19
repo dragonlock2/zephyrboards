@@ -1,8 +1,8 @@
 #ifndef FOURWIRE_H
 #define FOURWIRE_H
 
-#include <zephyr.h>
-#include <drivers/gpio.h>
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/gpio.h>
 
 typedef struct {
     const double *ref_vals; // ohms (MUST be in increasing order)

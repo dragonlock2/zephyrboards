@@ -1,9 +1,9 @@
-#include <kernel.h>
-#include <device.h>
-#include <init.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/init.h>
+#include <zephyr/linker/sections.h>
+#include <zephyr/arch/cpu.h>
 #include <soc.h>
-#include <linker/sections.h>
-#include <arch/cpu.h>
 
 #include <fsl_power.h>
 #include <fsl_clock.h>

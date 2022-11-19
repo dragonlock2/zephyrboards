@@ -31,7 +31,6 @@
             compatible = "nxp,lpc84x-syscon";
             #clock-cells = <1>;
             reg = <0x40048000 0x4000>;
-            label = "SYSCON";
             status = "okay";
         };
 
@@ -39,7 +38,6 @@
             compatible = "nxp,lpc84x-swm";
             clocks = <&syscon kCLOCK_Swm>;
             reg = <0x4000c000 0x4000>;
-            label = "SWM_0";
             status = "okay";
         };
 
@@ -49,7 +47,6 @@
             swms = <&swm0 &swm0>;
             swmfuncs = <kSWM_USART0_TXD kSWM_USART0_RXD>;
             reg = <0x40064000 0x4000>;
-            label = "UART_0";
             status = "disabled";
         };
 
@@ -58,7 +55,6 @@
             clocks = <&syscon kCLOCK_Gpio0>;
             reg = <0xa0000000 0x4000>;
             interrupts = <24 2>,<25 2>,<26 2>,<27 2>;
-            label = "GPIO_0";
             gpio-controller;
             #gpio-cells = <2>;
             port = <0>;
@@ -70,7 +66,6 @@
             clocks = <&syscon kCLOCK_Gpio1>;
             reg = <0xa0000000 0x4000>;
             interrupts = <28 2>,<29 2>,<30 2>,<31 2>;
-            label = "GPIO_1";
             gpio-controller;
             #gpio-cells = <2>;
             port = <1>;

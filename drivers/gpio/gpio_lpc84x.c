@@ -2,8 +2,8 @@
 
 /* Inspired by nxp,lpc-gpio */
 
-#include <drivers/gpio.h>
-#include <drivers/clock_control.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/clock_control.h>
 #include "gpio_utils.h"
 #include "iocon_map_lpc84x.h"
 

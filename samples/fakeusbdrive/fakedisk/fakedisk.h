@@ -1,7 +1,7 @@
 #ifndef FAKEDISK_H
 #define FAKEDISK_H
 
-#include <zephyr.h>
+#include <zephyr/kernel.h>
 
 #define SECTOR_COUNT CONFIG_DISK_FAKE_SECTOR_COUNT
 #define SECTORS_PER_FAT (SECTOR_COUNT / 64 / 128)
