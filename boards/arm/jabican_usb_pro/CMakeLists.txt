@@ -11,8 +11,8 @@ add_custom_target(
     COMMAND git apply ${BOARD_DIR}/hal_nxp.patch
     WORKING_DIRECTORY $ENV{ZEPHYR_BASE}/../modules/hal/nxp
 )
-add_dependencies(app apply_zephyr_patch)
-add_dependencies(app apply_hal_nxp_patch)
+add_dependencies(version_h apply_zephyr_patch)
+add_dependencies(version_h apply_hal_nxp_patch)
 
 add_custom_target(
     remove_zephyr_patch ALL

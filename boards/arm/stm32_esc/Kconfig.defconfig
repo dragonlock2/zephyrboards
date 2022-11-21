@@ -1,0 +1,6 @@
+if BOARD_STM32_ESC
+
+config BOARD
+    default "stm32_esc"
+
+endif # BOARD_STM32_ESC

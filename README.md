@@ -20,6 +20,7 @@ Follow https://docs.zephyrproject.org/latest/getting_started/index.html to get d
 | 6wire | https://github.com/dragonlock2/kicadboards/tree/main/projects/6wire | |
 | efm32wg | https://github.com/dragonlock2/kicadboards/tree/main/breakouts/efm32wg | leuart, spi not working |
 | jabican_usb_pro | WIP | MCUboot |
+| stm32_esc | WIP | |
 
 ## Drivers
 

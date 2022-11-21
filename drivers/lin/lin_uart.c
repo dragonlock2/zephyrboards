@@ -162,28 +162,43 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
     bool spurious = true;
     data->irq_has_lock = true;
     while (uart_irq_update(uart_dev) && uart_irq_is_pending(uart_dev)) {
+        /* NOTE: Common UART peripheral quirk is that clearing errors involves
+           reading the incoming byte. Common driver issue is that it clears errors
+           even if there is no error. This behavior must be patched if present.
+        */
+        int err = uart_err_check(uart_dev);
+        if (err > 0) {
+            if (data->mode == LIN_MODE_RESPONDER &&
+                err & (UART_ERROR_FRAMING | UART_BREAK)) { // not all drivers support break detection
+                k_timer_stop(&data->timer);
+                if (data->timed_out) {
+                    k_sem_take(&data->lock, K_NO_WAIT); // re-take just in case happened during this ISR
+                    data->irq_has_lock = true;
+                } else {
+                    if (data->state == LIN_UART_STATE_SEND_RESPONSE) {
+                        if (data->resp_msg->cb != NULL) {
+                            data->resp_msg->cb(dev, -EIO, data->resp_msg->cb_user_data);
+                        }
+                        k_sem_give(&data->resp_msg->lock);
+                    }
+                }
+                data->state = LIN_UART_STATE_SYNC;
+                data->timed_out = false;
+                k_timer_start(&data->timer, data->timeout, K_FOREVER);
+            } else {
+                LOG_ERR("unexpected error byte %d", err);
+                goto lin_uart_irq_fail;
+            }
+        }
+
         if (uart_irq_rx_ready(uart_dev)) {
             spurious = false;
-            // On MK22, doing the read first would actually clear the errors
-            int err = uart_err_check(uart_dev);
             uint8_t bite = 0;
-            if (uart_fifo_read(uart_dev, &bite, 1) < 0) {
-                LOG_ERR("fifo read not supported");
-                k_panic();
+            if (uart_fifo_read(uart_dev, &bite, 1) <= 0) {
+                LOG_ERR("fifo read not supported or no byte to read");
+                goto lin_uart_irq_fail;
             }
-            if (err > 0) {
-                if (data->mode == LIN_MODE_RESPONDER &&
-                    data->state == LIN_UART_STATE_BREAK &&
-                    err & (UART_ERROR_FRAMING | UART_BREAK) &&
-                    bite == LIN_UART_BREAK) { // does it always receive a 0 on break?
-                    data->state = LIN_UART_STATE_SYNC;
-                    data->timed_out = false;
-                    k_timer_start(&data->timer, data->timeout, K_FOREVER);
-                } else {
-                    LOG_ERR("unexpected error byte");
-                    goto lin_uart_irq_fail;
-                }
-            } else if (data->mode == LIN_MODE_COMMANDER) {
+            if (data->mode == LIN_MODE_COMMANDER) {
                 switch (data->state) {
                     case LIN_UART_STATE_BREAK:
                         if (bite != LIN_UART_BREAK) {
