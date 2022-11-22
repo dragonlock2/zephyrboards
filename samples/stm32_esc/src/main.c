@@ -1,54 +1,130 @@
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/adc.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
 #include <zephyrboards/drivers/lin.h>
 LOG_MODULE_REGISTER(main, CONFIG_LOG_DEFAULT_LEVEL);
 
-const struct device *dev = DEVICE_DT_GET_ANY(zephyrboards_lin_uart);
+const struct device *lin = DEVICE_DT_GET_ANY(zephyrboards_lin_uart);
 
-LIN_MSGQ_DEFINE(msgq, 32);
+const struct gpio_dt_spec leds[] = {
+    GPIO_DT_SPEC_GET(DT_NODELABEL(led_red),   gpios),
+    GPIO_DT_SPEC_GET(DT_NODELABEL(led_green), gpios),
+    GPIO_DT_SPEC_GET(DT_NODELABEL(led_blue),  gpios),
+};
 
-void lin_tx_handler(const struct device *dev, int error, void *user_data) {
-    LOG_INF("finished tx %p %d", dev, error);
-}
+const struct gpio_dt_spec dgs[] = {
+    GPIO_DT_SPEC_GET(DT_NODELABEL(dg1), gpios),
+    GPIO_DT_SPEC_GET(DT_NODELABEL(dg2), gpios),
+    GPIO_DT_SPEC_GET(DT_NODELABEL(dg3), gpios),
+};
 
-void print_msg(struct zlin_frame *msg) {
-    LOG_INF("msg = id=0x%x,checksum=%d,data_len=%d",
-        msg->id, msg->checksum_type, msg->data_len);
-    LOG_HEXDUMP_INF(msg->data, msg->data_len, "data=");
-}
+const struct gpio_dt_spec coast = GPIO_DT_SPEC_GET(DT_NODELABEL(coast), gpios);
+const struct gpio_dt_spec sleep = GPIO_DT_SPEC_GET(DT_NODELABEL(sleep), gpios);
+const struct gpio_dt_spec wdog  = GPIO_DT_SPEC_GET(DT_NODELABEL(wdog),  gpios);
+
+// TODO replace w/ PWM
+const struct gpio_dt_spec ih1 = GPIO_DT_SPEC_GET(DT_NODELABEL(ih1), gpios);
+const struct gpio_dt_spec ih2 = GPIO_DT_SPEC_GET(DT_NODELABEL(ih2), gpios);
+const struct gpio_dt_spec ih3 = GPIO_DT_SPEC_GET(DT_NODELABEL(ih3), gpios);
+const struct gpio_dt_spec il1 = GPIO_DT_SPEC_GET(DT_NODELABEL(il1), gpios);
+const struct gpio_dt_spec il2 = GPIO_DT_SPEC_GET(DT_NODELABEL(il2), gpios);
+const struct gpio_dt_spec il3 = GPIO_DT_SPEC_GET(DT_NODELABEL(il3), gpios);
+
+// BEMF comparator
+const struct gpio_dt_spec bemf_trig[] = {
+    GPIO_DT_SPEC_GET(DT_NODELABEL(bemf_trig_a), gpios),
+    GPIO_DT_SPEC_GET(DT_NODELABEL(bemf_trig_b), gpios),
+    GPIO_DT_SPEC_GET(DT_NODELABEL(bemf_trig_c), gpios),
+};
+
+// BEMF direct measurement
+const struct adc_dt_spec bemf_adc[] = {
+    ADC_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 0),
+    ADC_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 1),
+    ADC_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 2),
+};
+
+// FOC current sense
+const struct adc_dt_spec foc_adc[] = {
+    ADC_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 3),
+    ADC_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 4),
+    ADC_DT_SPEC_GET_BY_IDX(DT_PATH(zephyr_user), 5),
+};
 
 int main() {
-    if (lin_set_bitrate(dev, 19200)) {
-        LOG_ERR("couldn't set bitrate");
+    lin_set_mode(lin, LIN_MODE_RESPONDER);
+    lin_set_bitrate(lin, 19200);
+
+    gpio_pin_configure_dt(&leds[0], GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&leds[1], GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&leds[2], GPIO_OUTPUT_INACTIVE);
+
+    gpio_pin_configure_dt(&dgs[0], GPIO_INPUT);
+    gpio_pin_configure_dt(&dgs[1], GPIO_INPUT);
+    gpio_pin_configure_dt(&dgs[2], GPIO_INPUT);
+    gpio_pin_configure_dt(&coast, GPIO_OUTPUT_ACTIVE);
+    gpio_pin_configure_dt(&sleep, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&wdog,  GPIO_OUTPUT_INACTIVE);
+
+    // TODO replace w/ PWM
+    gpio_pin_configure_dt(&ih1, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&il1, GPIO_OUTPUT_ACTIVE);
+
+    gpio_pin_configure_dt(&ih2, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&il2, GPIO_OUTPUT_ACTIVE);
+
+    gpio_pin_configure_dt(&ih3, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&il3, GPIO_OUTPUT_ACTIVE);
+
+    // BEMF comparator
+    gpio_pin_configure_dt(&bemf_trig[0], GPIO_INPUT);
+    gpio_pin_configure_dt(&bemf_trig[1], GPIO_INPUT);
+    gpio_pin_configure_dt(&bemf_trig[2], GPIO_INPUT);
+
+    // BEMF direct measurement
+    for (int i = 0; i < 3; i++) {
+        adc_channel_setup_dt(&bemf_adc[i]);
     }
 
-    LOG_INF("adding auto length/checksum filter to each id");
-    struct zlin_filter filter = {
-        .checksum_type = LIN_CHECKSUM_AUTO,
-        .data_len = 0,
-    };
-    for (int i = 0; i < LIN_NUM_ID; i++) {
-        filter.id = i;
-        if (lin_add_rx_filter_msgq(dev, &msgq, &filter) < 0) {
-            LOG_ERR("failed to add filter");            
+    // FOC current sense
+    for (int i = 0; i < 3; i++) {
+        adc_channel_setup_dt(&foc_adc[i]);
+    }
+
+    LOG_DBG("booted!");
+    while (1) {
+        LOG_DBG("bemf trig %d %d %d",
+            gpio_pin_get_dt(&bemf_trig[0]),
+            gpio_pin_get_dt(&bemf_trig[1]),
+            gpio_pin_get_dt(&bemf_trig[2])
+        );
+
+        int16_t val;
+        struct adc_sequence adc_seq = {
+            .buffer = &val,
+            .buffer_size = sizeof val,
+        };
+
+        int32_t bemf_mv[3];
+        for (int i = 0; i < 3; i++) {
+            adc_sequence_init_dt(&bemf_adc[i], &adc_seq);
+            adc_read(bemf_adc[i].dev, &adc_seq);
+            bemf_mv[i] = val;
+            adc_raw_to_millivolts_dt(&bemf_adc[i], &bemf_mv[i]);
         }
-    }
+        LOG_DBG("bemf mV %d %d %d", bemf_mv[0], bemf_mv[1], bemf_mv[2]);
 
-    if (lin_set_mode(dev, LIN_MODE_RESPONDER)) {
-        LOG_ERR("failed to set responder mode");
-    }
-    struct zlin_frame msg = {
-        .id = 42,
-        .checksum_type = LIN_CHECKSUM_ENHANCED,
-        .data_len = 2,
-        .data = {0x69, 0x42},
-    };
-    if (lin_send(dev, &msg, K_MSEC(10), lin_tx_handler, NULL)) {
-        LOG_ERR("failed to send msg in time");
-    }
-    if (k_msgq_get(&msgq, &msg, K_FOREVER) == 0) {
-        print_msg(&msg);
-    }
+        int32_t foc_ma[3];
+        for (int i = 0; i < 3; i++) {
+            adc_sequence_init_dt(&foc_adc[i], &adc_seq);
+            adc_read(foc_adc[i].dev, &adc_seq);
+            foc_ma[i] = (val * 30000) >> 12; // can't set separate reference
+        }
+        LOG_DBG("foc mA %d %d %d", foc_ma[0], foc_ma[1], foc_ma[2]);
 
+        gpio_pin_toggle_dt(&leds[2]);
+        k_msleep(500);
+    }
     return 0;
 }

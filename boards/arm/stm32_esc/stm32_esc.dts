@@ -1,6 +1,7 @@
 /dts-v1/;
 #include <st/f1/stm32f103Xb.dtsi>
 #include <st/f1/stm32f103c(8-b)tx-pinctrl.dtsi>
+#include <zephyr/dt-bindings/adc/adc.h>
 
 / {
 	model = "stm32_esc";
@@ -30,10 +31,57 @@
         led_blue: led_blue {
             gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
         };
+		coast: coast {
+			gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
+		};
+		sleep: sleep {
+			gpios = <&gpiob 9 GPIO_ACTIVE_HIGH>;
+		};
+		wdog: wdog {
+			gpios = <&gpiob 8 GPIO_ACTIVE_HIGH>;
+		};
+
+		// TODO replace w/ PWM
+		ih1: ih1 {
+			gpios = <&gpioa 15 GPIO_ACTIVE_HIGH>;
+		};
+		il1: il1 {
+			gpios = <&gpiob 3 GPIO_ACTIVE_HIGH>;
+		};
+		ih2: ih2 {
+			gpios = <&gpiob 4 GPIO_ACTIVE_HIGH>;
+		};
+		il2: il2 {
+			gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
+		};
+		ih3: ih3 {
+			gpios = <&gpiob 6 GPIO_ACTIVE_HIGH>;
+		};
+		il3: il3 {
+			gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>;
+		};
     };
 
 	gpio_keys {
 		compatible = "gpio-keys";
+		dg1: dg1 {
+            gpios = <&gpioa 8 GPIO_ACTIVE_HIGH>;
+        };
+		dg2: dg2 {
+            gpios = <&gpioa 11 GPIO_ACTIVE_HIGH>;
+        };
+		dg3: dg3 {
+            gpios = <&gpioa 12 GPIO_ACTIVE_HIGH>;
+        };
+		bemf_trig_a: bemf_trig_a {
+			gpios = <&gpioa 3 GPIO_ACTIVE_HIGH>;
+		};
+		bemf_trig_b: bemf_trig_b {
+			gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
+		};
+		bemf_trig_c: bemf_trig_c {
+			gpios = <&gpiob 1 GPIO_ACTIVE_HIGH>;
+		};
 	};
 };
 
@@ -56,6 +104,10 @@
 	apb2-prescaler = <1>;
 };
 
+&pinctrl {
+	swj-cfg = "jtag-disable";
+};
+
 &usart1 {
 	pinctrl-0 = <&usart1_tx_pa9 &usart1_rx_pa10>;
 	pinctrl-names = "default";
@@ -75,4 +127,71 @@
         bitrate = <19200>;
         max-wait-percent = <200>;
     };
+};
+
+&adc1 {
+	pinctrl-0 = <&adc1_in2_pa2 &adc1_in6_pa6 &adc1_in7_pa7   // pa2=BEMF_A,   pa6=BEMF_B,   pa7=BEMF_C
+				 &adc1_in1_pa1 &adc1_in4_pa4 &adc1_in8_pb0>; // pa1=iSense_A, pa4=iSense_B, pb0=iSense_C
+	pinctrl-names = "default";
+	vref-mv = <36300>; // mV
+	// vref-mv = <30000>; // mA
+	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@2 {
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@6 {
+		reg = <6>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@7 {
+		reg = <7>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@4 {
+		reg = <4>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@8 {
+		reg = <8>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+};
+
+/ {
+	zephyr,user {
+		io-channels = <&adc1 2>, <&adc1 6>, <&adc1 7>, 
+					  <&adc1 1>, <&adc1 4>, <&adc1 8>;
+	};
 };
