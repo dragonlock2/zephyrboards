@@ -2,6 +2,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/pwm.h>
+#include <stm32f1xx.h>
+#include <stm32f1xx_ll_tim.h>
 #include "motor.h"
 
 /* private constants */
@@ -44,10 +46,12 @@ typedef struct {
     struct pwm_dt_spec  hsd;
     struct pwm_dt_spec  lsd;
     struct gpio_dt_spec bemf;
+    TIM_TypeDef *timer;
 } motor_term_S;
 
 typedef struct {
     motor_term_S terms[MOTOR_TERM_COUNT];
+    uint32_t pwm_period;
 
     motor_state_E state;
 } motor_data_S;
@@ -55,28 +59,49 @@ typedef struct {
 static motor_data_S motor_data = {
     .terms = {
         [MOTOR_TERM_A] = {
-            .hsd  = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_a), 0),
-            .lsd  = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_a), 1),
-            .bemf = GPIO_DT_SPEC_GET_BY_IDX(DT_NODELABEL(bemf_trig), gpios, 0),
+            .hsd   = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_a), 0),
+            .lsd   = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_a), 1),
+            .bemf  = GPIO_DT_SPEC_GET_BY_IDX(DT_NODELABEL(bemf_trig), gpios, 0),
+            .timer = TIM2,
+
         },
         [MOTOR_TERM_B] = {
-            .hsd  = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_b), 0),
-            .lsd  = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_b), 1),
-            .bemf = GPIO_DT_SPEC_GET_BY_IDX(DT_NODELABEL(bemf_trig), gpios, 1),
+            .hsd   = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_b), 0),
+            .lsd   = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_b), 1),
+            .bemf  = GPIO_DT_SPEC_GET_BY_IDX(DT_NODELABEL(bemf_trig), gpios, 1),
+            .timer = TIM3,
         },
         [MOTOR_TERM_C] = {
-            .hsd  = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_c), 0),
-            .lsd  = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_c), 1),
-            .bemf = GPIO_DT_SPEC_GET_BY_IDX(DT_NODELABEL(bemf_trig), gpios, 2),
+            .hsd   = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_c), 0),
+            .lsd   = PWM_DT_SPEC_GET_BY_IDX(DT_NODELABEL(pwm_c), 1),
+            .bemf  = GPIO_DT_SPEC_GET_BY_IDX(DT_NODELABEL(bemf_trig), gpios, 2),
+            .timer = TIM4,
         },
     }
 };
 
 /* private helpers */
 static void motor_drive_write(motor_state_E state, uint16_t pwm) {
-    // TODO make sure HiZ is actually HiZ, check freq (it might be half tbh) and stuff
+    // ATA6844 specific driving
+    // duty cycle == CCRx / (ARR + 1)
+    for (motor_term_E i = 0; i < MOTOR_TERM_COUNT; i++) {
+        switch (MOTOR_DRIVE_LUT[state][i]) {
+            case MOTOR_DRIVE_POS:
+                motor_data.terms[i].timer->CCR1 = pwm;
+                motor_data.terms[i].timer->CCR2 = pwm;
+                break;
 
-    // TODO see how fast func is with zephyr API
+            case MOTOR_DRIVE_NEG:
+                motor_data.terms[i].timer->CCR1 = 0;
+                motor_data.terms[i].timer->CCR2 = 0;
+                break;
+
+            case MOTOR_DRIVE_HIZ:
+                motor_data.terms[i].timer->CCR1 = motor_data.pwm_period;
+                motor_data.terms[i].timer->CCR2 = 0;
+                break;
+        }
+    }
 }
 
 /* public functions */
@@ -89,14 +114,15 @@ void motor_init() {
 
     // configure pins
     for (motor_term_E i = 0; i < MOTOR_TERM_COUNT; i++) {
-        // TODO setup PWM, get raw counter reg and use as the max
-        pwm_set_pulse_dt(&motor_data.terms[i].hsd, PWM_USEC(10));
-        pwm_set_pulse_dt(&motor_data.terms[i].lsd, PWM_USEC(10));
+        // setup PWM
+        pwm_set_pulse_dt(&motor_data.terms[i].hsd, PWM_USEC(1)); // 1us to ensure output enabled
+        pwm_set_pulse_dt(&motor_data.terms[i].lsd, PWM_USEC(1));
 
         // TODO setup interrupt
         gpio_pin_configure_dt(&motor_data.terms[i].bemf, GPIO_INPUT);
     }
-
+    motor_data.pwm_period = motor_data.terms[MOTOR_TERM_A].timer->ARR + 1; // assume all same
+    
     motor_drive_write(MOTOR_STATE_COAST, 0);
 
     // TODO IPD, just align to one pole
