@@ -5,4 +5,9 @@ set(BOARD stm32_esc)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(stm32_esc)
 
-target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE
+    src/main.c
+    src/rgb.c
+    src/sense.c
+    src/motor.c
+)

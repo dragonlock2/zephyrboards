@@ -2,6 +2,8 @@
 #include <st/f1/stm32f103Xb.dtsi>
 #include <st/f1/stm32f103c(8-b)tx-pinctrl.dtsi>
 #include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include <zephyr/dt-bindings/pinctrl/stm32f1-pinctrl.h>
 
 / {
 	model = "stm32_esc";
@@ -40,47 +42,35 @@
 		wdog: wdog {
 			gpios = <&gpiob 8 GPIO_ACTIVE_HIGH>;
 		};
+    };
 
-		// TODO replace w/ PWM
-		ih1: ih1 {
-			gpios = <&gpioa 15 GPIO_ACTIVE_HIGH>;
-		};
-		il1: il1 {
-			gpios = <&gpiob 3 GPIO_ACTIVE_HIGH>;
-		};
-		ih2: ih2 {
-			gpios = <&gpiob 4 GPIO_ACTIVE_HIGH>;
-		};
-		il2: il2 {
-			gpios = <&gpiob 5 GPIO_ACTIVE_HIGH>;
-		};
-		ih3: ih3 {
-			gpios = <&gpiob 6 GPIO_ACTIVE_HIGH>;
-		};
-		il3: il3 {
-			gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>;
-		};
+	pwmleds {
+        compatible = "pwm-leds";
+        pwm_a: pwm_a  {
+            pwms = <&pwm2 1 PWM_KHZ(48) PWM_POLARITY_INVERTED>, // HSD
+				   <&pwm2 2 PWM_KHZ(48) PWM_POLARITY_INVERTED>; // LSD
+        };
+		pwm_b: pwm_b  {
+            pwms = <&pwm3 1 PWM_KHZ(48) PWM_POLARITY_INVERTED>, // HSD
+				   <&pwm3 2 PWM_KHZ(48) PWM_POLARITY_INVERTED>; // LSD
+        };
+		pwm_c: pwm_c  {
+            pwms = <&pwm4 1 PWM_KHZ(48) PWM_POLARITY_INVERTED>, // HSD
+				   <&pwm4 2 PWM_KHZ(48) PWM_POLARITY_INVERTED>; // LSD
+        };
     };
 
 	gpio_keys {
 		compatible = "gpio-keys";
-		dg1: dg1 {
-            gpios = <&gpioa 8 GPIO_ACTIVE_HIGH>;
-        };
-		dg2: dg2 {
-            gpios = <&gpioa 11 GPIO_ACTIVE_HIGH>;
-        };
-		dg3: dg3 {
-            gpios = <&gpioa 12 GPIO_ACTIVE_HIGH>;
-        };
-		bemf_trig_a: bemf_trig_a {
-			gpios = <&gpioa 3 GPIO_ACTIVE_HIGH>;
+		dgs: dgs {
+			gpios = <&gpioa 8  GPIO_ACTIVE_HIGH>, // DG1
+					<&gpioa 11 GPIO_ACTIVE_HIGH>, // DG2
+					<&gpioa 12 GPIO_ACTIVE_HIGH>; // DG3
 		};
-		bemf_trig_b: bemf_trig_b {
-			gpios = <&gpioa 5 GPIO_ACTIVE_HIGH>;
-		};
-		bemf_trig_c: bemf_trig_c {
-			gpios = <&gpiob 1 GPIO_ACTIVE_HIGH>;
+		bemf_trig: bemf_trig {
+			gpios = <&gpioa 3 GPIO_ACTIVE_HIGH>, // A
+					<&gpioa 5 GPIO_ACTIVE_HIGH>, // B
+					<&gpiob 1 GPIO_ACTIVE_HIGH>; // C
 		};
 	};
 };
@@ -106,6 +96,15 @@
 
 &pinctrl {
 	swj-cfg = "jtag-disable";
+
+	// bug in code generator :(
+	/omit-if-no-ref/ tim3_ch1_remap2_pwm_pb4: tim3_ch1_remap2_pwm_pb4 {
+		pinmux = <STM32F1_PINMUX('B', 4, ALTERNATE, TIM3_REMAP2)>;
+	};
+
+	/omit-if-no-ref/ tim3_ch2_remap2_pwm_pb5: tim3_ch2_remap2_pwm_pb5 {
+		pinmux = <STM32F1_PINMUX('B', 5, ALTERNATE, TIM3_REMAP2)>;
+	};
 };
 
 &usart1 {
@@ -129,22 +128,50 @@
     };
 };
 
+&timers2 {
+    pwm2: pwm {
+        pinctrl-0 = <&tim2_ch1_remap1_pwm_pa15 &tim2_ch2_remap1_pwm_pb3>;
+        pinctrl-names = "default";
+        status = "okay";
+    };
+    status = "okay";
+};
+
+&timers3 {
+    pwm3: pwm {
+        pinctrl-0 = <&tim3_ch1_remap2_pwm_pb4 &tim3_ch2_remap2_pwm_pb5>;
+        pinctrl-names = "default";
+        status = "okay";
+    };
+    status = "okay";
+};
+
+&timers4 {
+    pwm4: pwm {
+        pinctrl-0 = <&tim4_ch1_pwm_pb6 &tim4_ch2_pwm_pb7>;
+        pinctrl-names = "default";
+        status = "okay";
+    };
+    status = "okay";
+};
+
 &adc1 {
-	pinctrl-0 = <&adc1_in2_pa2 &adc1_in6_pa6 &adc1_in7_pa7   // pa2=BEMF_A,   pa6=BEMF_B,   pa7=BEMF_C
-				 &adc1_in1_pa1 &adc1_in4_pa4 &adc1_in8_pb0>; // pa1=iSense_A, pa4=iSense_B, pb0=iSense_C
+	pinctrl-0 = <&adc1_in2_pa2 &adc1_in6_pa6 &adc1_in7_pa7 // pa2=BEMF_A,   pa6=BEMF_B,   pa7=BEMF_C
+				 &adc1_in1_pa1 &adc1_in4_pa4 &adc1_in8_pb0 // pa1=iSense_A, pa4=iSense_B, pb0=iSense_C
+				 &adc1_in0_pa0>;						   // pa0=VBUS
 	pinctrl-names = "default";
-	vref-mv = <36300>; // mV
-	// vref-mv = <30000>; // mA
 	status = "okay";
 
 	#address-cells = <1>;
 	#size-cells = <0>;
 
+	// BEMF
 	channel@2 {
 		reg = <2>;
 		zephyr,gain = "ADC_GAIN_1";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,vref-mv = <36300>;
 		zephyr,resolution = <12>;
 	};
 
@@ -153,6 +180,7 @@
 		zephyr,gain = "ADC_GAIN_1";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,vref-mv = <36300>;
 		zephyr,resolution = <12>;
 	};
 
@@ -161,14 +189,17 @@
 		zephyr,gain = "ADC_GAIN_1";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,vref-mv = <36300>;
 		zephyr,resolution = <12>;
 	};
 
+	// iSense
 	channel@1 {
 		reg = <1>;
 		zephyr,gain = "ADC_GAIN_1";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,vref-mv = <30000>; // mA
 		zephyr,resolution = <12>;
 	};
 
@@ -177,6 +208,7 @@
 		zephyr,gain = "ADC_GAIN_1";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,vref-mv = <30000>; // mA
 		zephyr,resolution = <12>;
 	};
 
@@ -185,6 +217,17 @@
 		zephyr,gain = "ADC_GAIN_1";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,vref-mv = <30000>; // mA
+		zephyr,resolution = <12>;
+	};
+
+	// VBUS
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,vref-mv = <36300>;
 		zephyr,resolution = <12>;
 	};
 };
@@ -192,6 +235,7 @@
 / {
 	zephyr,user {
 		io-channels = <&adc1 2>, <&adc1 6>, <&adc1 7>, 
-					  <&adc1 1>, <&adc1 4>, <&adc1 8>;
+					  <&adc1 1>, <&adc1 4>, <&adc1 8>,
+					  <&adc1 0>;
 	};
 };
