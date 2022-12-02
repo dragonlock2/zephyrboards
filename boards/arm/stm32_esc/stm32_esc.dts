@@ -47,16 +47,16 @@
 	pwmleds {
         compatible = "pwm-leds";
         pwm_a: pwm_a  {
-            pwms = <&pwm2 1 PWM_KHZ(48) PWM_POLARITY_INVERTED>, // HSD
-				   <&pwm2 2 PWM_KHZ(48) PWM_POLARITY_INVERTED>; // LSD
+            pwms = <&pwm2 1 PWM_KHZ(24) PWM_POLARITY_INVERTED>, // HSD
+				   <&pwm2 2 PWM_KHZ(24) PWM_POLARITY_INVERTED>; // LSD
         };
 		pwm_b: pwm_b  {
-            pwms = <&pwm3 1 PWM_KHZ(48) PWM_POLARITY_INVERTED>, // HSD
-				   <&pwm3 2 PWM_KHZ(48) PWM_POLARITY_INVERTED>; // LSD
+            pwms = <&pwm3 1 PWM_KHZ(24) PWM_POLARITY_INVERTED>, // HSD
+				   <&pwm3 2 PWM_KHZ(24) PWM_POLARITY_INVERTED>; // LSD
         };
 		pwm_c: pwm_c  {
-            pwms = <&pwm4 1 PWM_KHZ(48) PWM_POLARITY_INVERTED>, // HSD
-				   <&pwm4 2 PWM_KHZ(48) PWM_POLARITY_INVERTED>; // LSD
+            pwms = <&pwm4 1 PWM_KHZ(24) PWM_POLARITY_INVERTED>, // HSD
+				   <&pwm4 2 PWM_KHZ(24) PWM_POLARITY_INVERTED>; // LSD
         };
     };
 

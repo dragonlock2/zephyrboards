@@ -19,26 +19,8 @@ int main() {
 
     LOG_DBG("booted!");
     while (1) {
-        LOG_DBG("bemf %d %d %d",
-            sense_read(SENSE_CHANNEL_BEMF_A),
-            sense_read(SENSE_CHANNEL_BEMF_B),
-            sense_read(SENSE_CHANNEL_BEMF_C)
-        );
-
-        LOG_DBG("isense %d %d %d",
-            sense_read(SENSE_CHANNEL_ISENSE_A),
-            sense_read(SENSE_CHANNEL_ISENSE_B),
-            sense_read(SENSE_CHANNEL_ISENSE_C)
-        );
-
-        LOG_DBG("vbus %d",
-            sense_read(SENSE_CHANNEL_VBUS)
-        );
-
-        static rgb_color_E c = RGB_COLOR_OFF;
-        rgb_write(c);
-        c++;
-        if (c == RGB_COLOR_COUNT) { c = RGB_COLOR_OFF; }
+        rgb_write(RGB_COLOR_RED);
         k_msleep(500);
+        // TODO feedback over LIN
     }
 }
