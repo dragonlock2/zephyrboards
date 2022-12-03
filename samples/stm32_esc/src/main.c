@@ -18,8 +18,13 @@ int main() {
     motor_init();
 
     LOG_DBG("booted!");
+    rgb_color_E c = 0;
     while (1) {
-        rgb_write(RGB_COLOR_RED);
+        motor_write(0.1, true);
+        LOG_DBG("cycle time us: %d", motor_cycle_time_us());
+
+        rgb_write(c);
+        c = c == RGB_COLOR_COUNT - 1 ? 0 : c + 1;
         k_msleep(500);
         // TODO feedback over LIN
     }

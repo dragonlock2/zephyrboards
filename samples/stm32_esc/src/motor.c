@@ -7,8 +7,9 @@
 #include "motor.h"
 
 /* private constants */
-#define MOTOR_OPEN_LOOP_CYCLES (10)
-#define MOTOR_MAX_BEMF_TIME    (K_MSEC(100))
+#define MOTOR_OPEN_LOOP_CYCLES (10) // increase if trouble starting or sudden direction changes
+#define MOTOR_MAX_BEMF_TIME    (K_MSEC(100)) // compromise max torque and startup capability
+#define MOTOR_REQ_BUFFER_LEN   (3)
 typedef enum {
     MOTOR_TERM_A = 0,
     MOTOR_TERM_B,
@@ -57,6 +58,11 @@ typedef struct {
 } motor_term_S;
 
 typedef struct {
+    uint16_t pwm;
+    bool forward;
+} motor_request_S;
+
+typedef struct {
     motor_term_S terms[MOTOR_TERM_COUNT];
     uint32_t pwm_period;
     uint32_t pwm_pulse;
@@ -64,6 +70,9 @@ typedef struct {
 
     uint32_t cycle_start;
     uint32_t cycle_time;
+
+    char req_buffer[MOTOR_REQ_BUFFER_LEN * sizeof(motor_request_S)];
+    struct k_msgq reqs;
 
     struct k_timer timeout_timer;
     struct k_timer offset_timer;
@@ -128,7 +137,16 @@ static void motor_bemf_cb(const struct device *port, struct gpio_callback *cb, g
 }
 
 static void motor_step(struct k_timer *timer) {
-    // TODO receive new message from message queue, update values if needed
+    // check if new request
+    motor_request_S req;
+    if (k_msgq_get(&motor_data.reqs, &req, K_NO_WAIT) == 0) {
+        if (motor_data.forward != req.forward) {
+            motor_data.cycles = 0;
+            motor_data.closed_loop = false;
+        }
+        motor_data.pwm_pulse = req.pwm;
+        motor_data.forward = req.forward;
+    }
 
     // update state, cycle time
     if (motor_data.forward) {
@@ -208,19 +226,24 @@ void motor_init() {
     k_timer_init(&motor_data.timeout_timer, motor_feedback_cb, NULL);
     k_timer_init(&motor_data.offset_timer,  motor_step, NULL);
 
-    // TODO remove
-    motor_data.pwm_pulse = 300;
-    
+    // start control loop
+    k_msgq_init(&motor_data.reqs, motor_data.req_buffer, sizeof(motor_request_S), MOTOR_REQ_BUFFER_LEN);
     motor_data.cycle_start = k_cycle_get_32();
     motor_data.closed_loop = false;
     motor_data.cycles = 0;
     motor_data.state = MOTOR_STATE_0;
     motor_step(NULL);
-
-    // TODO braking? flipping dir while moving?
-    // TODO add time for last revolution API, returns cycle time
 }
 
 void motor_write(double duty, bool forward) {
-    // TODO send a message in message queue
+    duty = duty < 0.0 ? 0.0 : (duty > 1.0 ? 1.0 : duty); // constrain [0,1]
+    motor_request_S req = {
+        .pwm = duty * motor_data.pwm_period,
+        .forward = forward,
+    };
+    k_msgq_put(&motor_data.reqs, &req, K_FOREVER);
+}
+
+uint32_t motor_cycle_time_us() {
+    return motor_data.cycle_time; // assume written in one instruction :P
 }
