@@ -176,6 +176,7 @@ static void motor_step(struct k_timer *timer) {
 }
 
 static void motor_feedback_cb(struct k_timer *timer) {
+    k_timer_stop(&motor_data.timeout_timer);
     gpio_pin_interrupt_configure_dt(
         &motor_data.terms[MOTOR_DRIVE_LUT[motor_data.state].bemf_gpio].bemf,
         GPIO_INT_DISABLE);
