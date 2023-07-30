@@ -82,8 +82,7 @@ static struct disk_info fake_disk = {
     .ops = &fake_disk_ops,
 };
 
-static int disk_fake_init(const struct device *dev) {
-    ARG_UNUSED(dev);
+static int disk_fake_init(void) {
     return disk_access_register(&fake_disk);
 }
 

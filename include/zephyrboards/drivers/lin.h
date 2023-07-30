@@ -1,6 +1,7 @@
 #ifndef ZEPHYRBOARDS_INCLUDE_DRIVERS_LIN_H_
 #define ZEPHYRBOARDS_INCLUDE_DRIVERS_LIN_H_
 
+#include <zephyr/kernel.h>
 #include <zephyr/types.h>
 #include <zephyr/device.h>
 #include <zephyr/sys/util.h>
@@ -51,10 +52,7 @@ struct zlin_frame {
     uint8_t res;  /* reserved/padding. */
     /** @endcond */
     /** Frame payload data */
-    union {
-        uint8_t data[LIN_MAX_DLEN];
-        uint32_t data_32[ceiling_fraction(LIN_MAX_DLEN, sizeof(uint32_t))];
-    };
+    uint8_t data[LIN_MAX_DLEN];
 };
 
 /**

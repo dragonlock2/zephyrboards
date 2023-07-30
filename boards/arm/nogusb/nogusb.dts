@@ -13,7 +13,7 @@
 		zephyr,uart-mcumgr = &usart5;
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
-		zephyr,code-partition = &image_0_primary_partition;
+		zephyr,code-partition = &slot0_partition;
 	};
 
 	// supported peripherals
@@ -65,52 +65,14 @@
 			min-residency-us = <100>;
 		};
 	};
-
-	soc {
-		can {
-			compatible = "bosch,m_can-base";
-			#address-cells = <1>;
-			#size-cells = <1>;
-			std-filter-elements = <28>;
-			ext-filter-elements = <8>;
-			rx-fifo0-elements = <3>;
-			rx-fifo1-elements = <3>;
-			rx-buffer-elements = <0>;
-			tx-buffer-elements = <3>;
-
-			can1: can@40006400 {
-				compatible = "st,stm32-fdcan";
-				reg = <0x40006400 0x400>, <0x4000B400 0x350>;
-				reg-names = "m_can", "message_ram";
-				interrupts = <21 0>, <22 0>;
-				interrupt-names = "LINE_0", "LINE_1";
-				clocks = <&rcc STM32_CLOCK_BUS_APB1 0x00001000>;
-				status = "disabled";
-				sjw = <1>;
-				sample-point = <875>;
-				sjw-data = <1>;
-				sample-point-data = <875>;
-			};
-
-			can2: can@40006800 {
-				compatible = "st,stm32-fdcan";
-				reg = <0x40006800 0x400>, <0x4000B750 0x350>;
-				reg-names = "m_can", "message_ram";
-				interrupts = <21 0>, <22 0>;
-				interrupt-names = "LINE_0", "LINE_1";
-				clocks = <&rcc STM32_CLOCK_BUS_APB1 0x00001000>;
-				status = "disabled";
-				sjw = <1>;
-				sample-point = <875>;
-				sjw-data = <1>;
-				sample-point-data = <875>;
-			};
-		};
-	};
 };
 
 // bare minimum
 &clk_hsi {
+	status = "okay";
+};
+
+&clk_hsi48 {
 	status = "okay";
 };
 
@@ -146,7 +108,7 @@
 			reg = <0x00000000 0x00010000>; // 64KiB
 			read-only;
 		};
-		image_0_primary_partition: partition@10000 {
+		slot0_partition: partition@10000 {
 			label = "image-0";
 			reg = <0x00010000 0x00070000>; // 448KiB
 		};
@@ -198,12 +160,6 @@ zephyr_udc0: &usb {
 	pinctrl-names = "default";
 	bus-speed = <125000>;
 	bus-speed-data = <1000000>;
-};
-
-&can2 {
-	// status = "okay"; // shared interrupt, can't enable both yet
-	pinctrl-0 = <&fdcan2_rx_pb0 &fdcan2_tx_pb1>;
-	pinctrl-names = "default";
 };
 
 &rtc {

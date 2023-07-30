@@ -22,7 +22,7 @@
         zephyr,sram = &sram0;
         zephyr,flash = &flash0;
         zephyr,console = &uart0;
-        zephyr,code-partition = &image_0_primary_partition;
+        zephyr,code-partition = &slot0_partition;
     };
 
     leds {
@@ -65,7 +65,7 @@
 
     soc {
         flexcan0: can@40024000 {
-            compatible = "nxp,kinetis-flexcan";
+            compatible = "nxp,flexcan";
             reg = <0x40024000 0x1000>;
             interrupts = <75 0>, <76 0>, <77 0>, <78 0>, <79 0>, <80 0>;
             interrupt-names = "mb-0-15", "bus-off", "error", "tx-warning", "rx-warning", "wake-up";
@@ -98,7 +98,7 @@
             reg = <0x00000000 0x00010000>; // 64KiB
             read-only;
         };
-        image_0_primary_partition: partition@10000 {
+        slot0_partition: partition@10000 {
             label = "image-0";
             reg = <0x00010000 0x000F0000>; // 960KiB
         };

@@ -1,4 +1,5 @@
 #include "common.h"
+#include <zephyr/kernel.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(uart_test, CONFIG_LOG_DEFAULT_LEVEL);
@@ -11,7 +12,7 @@ static const struct device *uarts[] = {
     DT_FOREACH_PROP_ELEM(TEST_NODE, uart, ELEM_TO_DEVICE)
 };
 
-static int uart_test(const struct device *arg) {
+static int uart_test(void) {
     LOG_INF("starting UART test");
     char c;
     for (int i = 0; i < NUM_UART; i++) {

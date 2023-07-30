@@ -30,7 +30,7 @@ static void handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
     k_sem_give(&lock);
 }
 
-static int network_test(const struct device *arg) {
+static int network_test(void) {
     k_sem_init(&lock, 0, 1);
 
     LOG_INF("Waiting for an IPV4 address...");

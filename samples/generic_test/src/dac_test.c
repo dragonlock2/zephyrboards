@@ -29,7 +29,7 @@ static void dac_set_test(const struct device *dac, uint8_t *channels,
     uint32_t ref##id = DT_PROP(id, reference_voltage_mv);                   \
     dac_set_test(dac##id, chans##id, num_chans##id, res##id, ref##id, #id); \
 
-static int dac_test(const struct device *arg) {
+static int dac_test(void) {
     LOG_INF("starting DAC test");
     DT_FOREACH_STATUS_OKAY(test_dac, RUN_DAC_SET)
     return 0;

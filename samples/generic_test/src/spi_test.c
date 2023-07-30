@@ -11,7 +11,7 @@ static const struct device *spis[] = {
     DT_FOREACH_PROP_ELEM(TEST_NODE, spi, ELEM_TO_DEVICE)
 };
 
-static int spi_test(const struct device *arg) {
+static int spi_test(void) {
     LOG_INF("starting SPI test");
 
     struct spi_config cfg = {0};

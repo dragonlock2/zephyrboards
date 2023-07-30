@@ -130,7 +130,7 @@
 
 &timers2 {
     pwm2: pwm {
-        pinctrl-0 = <&tim2_ch1_remap1_pwm_pa15 &tim2_ch2_remap1_pwm_pb3>;
+        pinctrl-0 = <&tim2_ch1_remap1_pwm_out_pa15 &tim2_ch2_remap1_pwm_out_pb3>;
         pinctrl-names = "default";
         status = "okay";
     };
@@ -148,7 +148,7 @@
 
 &timers4 {
     pwm4: pwm {
-        pinctrl-0 = <&tim4_ch1_pwm_pb6 &tim4_ch2_pwm_pb7>;
+        pinctrl-0 = <&tim4_ch1_pwm_out_pb6 &tim4_ch2_pwm_out_pb7>;
         pinctrl-names = "default";
         status = "okay";
     };

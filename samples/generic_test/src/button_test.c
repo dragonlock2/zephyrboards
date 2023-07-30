@@ -21,7 +21,7 @@ static void btn_cb(const struct device *port, struct gpio_callback *cb, gpio_por
     LOG_INF("button %d pressed!", data->aux);
 }
 
-static int gpio_test(const struct device *arg) {
+static int gpio_test(void) {
     LOG_INF("starting button test");
     for (int i = 0; i < NUM_BTNS; i++) {
         LOG_INF("attaching logging interrupt to button %d", i);

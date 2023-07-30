@@ -1,4 +1,5 @@
 #include "common.h"
+#include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(led, CONFIG_LOG_DEFAULT_LEVEL);
@@ -11,7 +12,7 @@ static const struct gpio_dt_spec leds[] = {
     DT_FOREACH_PROP_ELEM(TEST_NODE, leds, ELEM_TO_GPIO)
 };
 
-static int gpio_test(const struct device *arg) {
+static int gpio_test(void) {
     LOG_INF("starting LED test");
     for (int i = 0; i < NUM_LEDS; i++) {
         LOG_INF("flashing LED %d", i);

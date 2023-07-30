@@ -5,7 +5,7 @@ LOG_MODULE_REGISTER(usb_test, CONFIG_LOG_DEFAULT_LEVEL);
 
 #if DT_PROP(TEST_NODE, usb)
 
-static int usb_test(const struct device *arg) {
+static int usb_test(void) {
     LOG_INF("enabling USB, returned %d, plug in to check", usb_enable(NULL));
     return 0;
 }

@@ -2,6 +2,7 @@
 
 /* Inspired by nxp,lpc-gpio */
 
+#include <zephyr/irq.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/clock_control.h>
 #include "gpio_utils.h"

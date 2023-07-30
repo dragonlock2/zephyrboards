@@ -42,7 +42,7 @@ void set_rgb(double r, double g, double b) {
 }
 
 // app
-K_THREAD_STACK_DEFINE(fourwire_stack_area, 320);
+K_THREAD_STACK_DEFINE(fourwire_stack_area, 256);
 
 int main() {
     usb_enable(NULL);

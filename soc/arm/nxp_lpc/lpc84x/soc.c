@@ -24,8 +24,7 @@ static void clock_init(void) {
     CLOCK_Select(kUART0_Clk_From_MainClk);
 }
 
-static int nxp_lpc84x_init(const struct device *arg) {
-    ARG_UNUSED(arg);
+static int nxp_lpc84x_init(void) {
     unsigned int old_level;
     old_level = irq_lock();
 

@@ -44,7 +44,7 @@ static void adc_set_test(const struct device *adc, uint8_t *channels,
     uint32_t ref##id = DT_PROP(id, reference_voltage_mv);                   \
     adc_set_test(adc##id, chans##id, num_chans##id, res##id, ref##id, #id); \
 
-static int adc_test(const struct device *arg) {
+static int adc_test(void) {
     LOG_INF("starting ADC test");
     DT_FOREACH_STATUS_OKAY(test_adc, RUN_ADC_SET)
     return 0;

@@ -11,7 +11,7 @@ static const struct device *i2cs[] = {
     DT_FOREACH_PROP_ELEM(TEST_NODE, i2c, ELEM_TO_DEVICE)
 };
 
-static int i2c_test(const struct device *arg) {
+static int i2c_test(void) {
     LOG_INF("starting I2C test");
     for (int i = 0; i < NUM_I2C; i++) {
         LOG_INF("scanning for devices on I2C %d", i);
