@@ -20,6 +20,6 @@
             resolution = <12>;
             reference-voltage-mv = <3300>;
         };
-        can = <&can1>;
+        can = <&fdcan1>;
     };
 };

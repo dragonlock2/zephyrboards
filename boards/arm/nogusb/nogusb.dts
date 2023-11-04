@@ -50,21 +50,6 @@
 		sw0  = &dbg_1;
 		sw1  = &dbg_2;
 	};
-
-	power-states {
-		stop0: state0 {
-			compatible = "zephyr,power-state";
-			power-state-name = "suspend-to-idle";
-			substate-id = <1>;
-			min-residency-us = <20>;
-		};
-		stop1: state1 {
-			compatible = "zephyr,power-state";
-			power-state-name = "suspend-to-idle";
-			substate-id = <2>;
-			min-residency-us = <100>;
-		};
-	};
 };
 
 // bare minimum
@@ -91,10 +76,6 @@
 	clock-frequency = <DT_FREQ_M(64)>;
 	ahb-prescaler = <1>;
 	apb1-prescaler = <1>;
-};
-
-&cpu0 {
-	cpu-power-states = <&stop0 &stop1>;
 };
 
 &flash0 {
@@ -130,6 +111,8 @@ zephyr_udc0: &usb {
 };
 
 &adc1 {
+	st,adc-clock-source = <SYNC>;
+	st,adc-prescaler = <4>;
 	pinctrl-0 = <&adc1_in1_pa1>;
 	pinctrl-names = "default";
 	status = "okay";
@@ -154,7 +137,7 @@ zephyr_udc0: &usb {
 	status = "okay";
 };
 
-&can1 {
+&fdcan1 {
 	status = "okay";
 	pinctrl-0 = <&fdcan1_rx_pd0 &fdcan1_tx_pd1>;
 	pinctrl-names = "default";

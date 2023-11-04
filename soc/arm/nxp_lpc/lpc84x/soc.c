@@ -29,7 +29,6 @@ static int nxp_lpc84x_init(void) {
     old_level = irq_lock();
 
     clock_init();
-    NMI_INIT();
 
     irq_unlock(old_level);
     return 0;

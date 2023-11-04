@@ -1,5 +1,5 @@
 #include "common.h"
-#include <zephyr/random/rand32.h>
+#include <zephyr/random/random.h>
 #include <zephyr/drivers/can.h>
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(can_test, CONFIG_LOG_DEFAULT_LEVEL);
