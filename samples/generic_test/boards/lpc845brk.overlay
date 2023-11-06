@@ -1,7 +1,7 @@
 / {
     flub {
         compatible = "test";
-        leds = <&led_red &led_green &led_blue>;
-        buttons = <&user_button>;
+        leds = <&led_r &led_g &led_b>;
+        buttons = <&usr_btn>;
     };
 };

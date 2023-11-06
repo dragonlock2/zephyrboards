@@ -9,6 +9,13 @@ config NUM_IRQS
     # must be >= the highest interrupt number used
     default 40
 
+if GPIO
+
+config GPIO_LPC84X
+    default y
+
+endif # GPIO
+
 if SERIAL
 
 config UART_LPC84X

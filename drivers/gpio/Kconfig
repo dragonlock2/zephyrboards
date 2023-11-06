@@ -1,0 +1,9 @@
+if GPIO
+
+rsource "Kconfig.lpc84x"
+
+config GPIO_INIT_PRIORITY
+    int "GPIO init priority"
+    default KERNEL_INIT_PRIORITY_DEFAULT
+
+endif # GPIO

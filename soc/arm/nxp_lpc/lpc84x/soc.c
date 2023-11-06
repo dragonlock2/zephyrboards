@@ -18,6 +18,10 @@ static void clock_init(void) {
 
     // use main clock for everything (difficult to do cleanly in devicetree)
     CLOCK_Select(kUART0_Clk_From_MainClk);
+    CLOCK_Select(kUART1_Clk_From_MainClk);
+    CLOCK_Select(kUART2_Clk_From_MainClk);
+    CLOCK_Select(kUART3_Clk_From_MainClk);
+    CLOCK_Select(kUART4_Clk_From_MainClk);
 }
 
 static int nxp_lpc84x_init(void) {

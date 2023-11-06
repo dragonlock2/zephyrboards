@@ -129,6 +129,7 @@ static const struct uart_driver_api lpc84x_uart_driver_api = {
     .configure  = lpc84x_uart_configure,
     .config_get = lpc84x_uart_config_get,
 #endif
+    // TODO interrupt support
 };
 
 #define LPC84X_UART_INIT(n)                                             \

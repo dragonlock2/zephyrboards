@@ -8,11 +8,11 @@ properties:
   reg:
     required: true
 
-  swm:
+  clk:
     type: array
     required: true
 
-  clk:
+  swm:
     type: array
     required: true
 

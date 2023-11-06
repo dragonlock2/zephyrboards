@@ -32,8 +32,61 @@
         uart0: serial@40064000 {
             compatible = "nxp,lpc84x-uart";
             reg = <0x40064000 0x4000>;
-            swm = <kSWM_USART0_TXD kSWM_USART0_RXD>;
             clk = <kCLOCK_Uart0>;
+            interrupts = <3 2>;
+            swm = <kSWM_USART0_TXD kSWM_USART0_RXD>;
+            status = "disabled";
+        };
+
+        uart1: serial@40068000 {
+            compatible = "nxp,lpc84x-uart";
+            reg = <0x40068000 0x4000>;
+            clk = <kCLOCK_Uart1>;
+            interrupts = <4 2>;
+            swm = <kSWM_USART1_TXD kSWM_USART1_RXD>;
+            status = "disabled";
+        };
+
+        uart2: serial@4006C000 {
+            compatible = "nxp,lpc84x-uart";
+            reg = <0x4006C000 0x4000>;
+            clk = <kCLOCK_Uart2>;
+            interrupts = <5 2>;
+            swm = <kSWM_USART2_TXD kSWM_USART2_RXD>;
+            status = "disabled";
+        };
+
+        uart3: serial@40070000 {
+            compatible = "nxp,lpc84x-uart";
+            reg = <0x40070000 0x4000>;
+            clk = <kCLOCK_Uart3>;
+            interrupts = <30 2>;
+            swm = <kSWM_USART3_TXD kSWM_USART3_RXD>;
+            status = "disabled";
+        };
+
+        uart4: serial@40074000 {
+            compatible = "nxp,lpc84x-uart";
+            reg = <0x40074000 0x4000>;
+            clk = <kCLOCK_Uart4>;
+            interrupts = <31 2>;
+            swm = <kSWM_USART4_TXD kSWM_USART4_RXD>;
+            status = "disabled";
+        };
+
+        gpio0: gpio0 {
+            compatible = "nxp,lpc84x-gpio";
+            port = <0>;
+            gpio-controller;
+            #gpio-cells = <2>;
+            status = "disabled";
+        };
+
+        gpio1: gpio1 {
+            compatible = "nxp,lpc84x-gpio";
+            port = <1>;
+            gpio-controller;
+            #gpio-cells = <2>;
             status = "disabled";
         };
     };

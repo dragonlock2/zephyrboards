@@ -1,0 +1,3 @@
+menuconfig GPIO_LPC84X
+    bool "LPC84X GPIO driver"
+    depends on SOC_SERIES_LPC84X
