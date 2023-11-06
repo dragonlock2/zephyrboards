@@ -7,8 +7,5 @@ config SOC_SERIES_LPC84X
 
     select HAS_MCUX
 
-    select CLOCK_CONTROL
-    select SWM
-
     help
       Enable support for LPC LPC84X MCU series

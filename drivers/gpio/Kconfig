@@ -1,5 +1,0 @@
-if GPIO
-
-rsource "Kconfig.lpc84x"
-
-endif # GPIO

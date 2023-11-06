@@ -2,27 +2,20 @@ description: LPC84X UART node
 
 compatible: "nxp,lpc84x-uart"
 
-include: [uart-controller.yaml, base.yaml]
+include: uart-controller.yaml
 
 properties:
-    reg:
-      required: true
+  reg:
+    required: true
 
-    clocks:
-      required: true
+  swm:
+    type: array
+    required: true
 
-    swms:
-      type: phandles
-      required: true
+  clk:
+    type: array
+    required: true
 
-    swmfuncs:
-      type: array
-      required: true
-
-    iocon-pins:
-      type: array
-      required: true
-
-    swm-pins:
-      type: array
-      required: true
+  pinctrl:
+    type: array
+    required: true

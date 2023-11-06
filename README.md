@@ -1,5 +1,5 @@
 # zephyrboards
-Zephyr RTOS board definitions for extra boards and drivers
+Extra Zephyr RTOS board definitions and drivers
 
 ## Setup
 

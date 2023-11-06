@@ -1,6 +1,6 @@
 if SOC_SERIES_LPC84X
 
-rsource "Kconfig.defconfig.lp*"
+rsource "Kconfig.defconfig.lpc84*"
 
 config SOC_SERIES
     default "lpc84x"
@@ -9,32 +9,11 @@ config NUM_IRQS
     # must be >= the highest interrupt number used
     default 40
 
-if CLOCK_CONTROL
-
-config CLOCK_CONTROL_LPC84X
-    default y
-
-endif # CLOCK_CONTROL
-
-if SWM
-
-config SWM_LPC84X
-    default y
-
-endif # SWM
-
 if SERIAL
 
 config UART_LPC84X
     default y
 
 endif # SERIAL
-
-if GPIO
-
-config GPIO_LPC84X
-    default y
-
-endif # GPIO
 
 endif # SOC_SERIES_LPC84X

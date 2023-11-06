@@ -1,6 +1,1 @@
 #include <nxp/nxp_lpc84x.dtsi>
-#include <mem.h>
-
-/ {
-    
-};

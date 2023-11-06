@@ -1,36 +1,28 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
-#include <zephyr/init.h>
-#include <zephyr/linker/sections.h>
-#include <zephyr/arch/cpu.h>
+#include <fsl_power.h>
 #include <soc.h>
 
-#include <fsl_power.h>
-#include <fsl_clock.h>
-
 static void clock_init(void) {
-    // just set to 30MHz FRO as main clock for now
+    // set to 30MHz FRO as main clock
     POWER_DisablePD(kPDRUNCFG_PD_FRO_OUT);
     POWER_DisablePD(kPDRUNCFG_PD_FRO);
     CLOCK_SetFroOscFreq(kCLOCK_FroOscOut30M);
     CLOCK_SetFroOutClkSrc(kCLOCK_FroSrcFroOsc);
     CLOCK_SetMainClkSrc(kCLOCK_MainClkSrcFro);
-    CLOCK_SetCoreSysClkDiv(1U);
+    CLOCK_SetCoreSysClkDiv(1);
 
-    // IOCON used everywhere
+    // always used
     CLOCK_EnableClock(kCLOCK_Iocon);
+    CLOCK_EnableClock(kCLOCK_Swm);
 
-    // switch everything to main clock
+    // use main clock for everything (difficult to do cleanly in devicetree)
     CLOCK_Select(kUART0_Clk_From_MainClk);
 }
 
 static int nxp_lpc84x_init(void) {
-    unsigned int old_level;
-    old_level = irq_lock();
-
     clock_init();
 
-    irq_unlock(old_level);
     return 0;
 }
 

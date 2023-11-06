@@ -1,5 +1,2 @@
-add_subdirectory_ifdef(CONFIG_CLOCK_CONTROL clock_control)
-add_subdirectory_ifdef(CONFIG_SWM swm)
-add_subdirectory_ifdef(CONFIG_SERIAL serial)
-add_subdirectory_ifdef(CONFIG_GPIO gpio)
 add_subdirectory_ifdef(CONFIG_LIN lin)
+add_subdirectory_ifdef(CONFIG_SERIAL serial)

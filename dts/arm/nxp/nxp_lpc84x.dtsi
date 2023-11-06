@@ -2,8 +2,7 @@
 #include <mem.h>
 
 #include <zephyrboards/dt-bindings/clock/lpc84x_clock.h>
-#include <zephyrboards/dt-bindings/swm/lpc84x_swm.h>
-#include <dt-bindings/gpio/gpio.h>
+#include <zephyrboards/dt-bindings/pinctrl/lpc84x-pinctrl.h>
 
 / {
     cpus {
@@ -27,48 +26,14 @@
             reg = <0 DT_SIZE_K(64)>;
         };
 
-        syscon: clock-controller@40048000 {
-            compatible = "nxp,lpc84x-syscon";
-            #clock-cells = <1>;
-            reg = <0x40048000 0x4000>;
-            status = "okay";
-        };
-
-        swm0: swm@4000c000 {
-            compatible = "nxp,lpc84x-swm";
-            clocks = <&syscon kCLOCK_Swm>;
-            reg = <0x4000c000 0x4000>;
-            status = "okay";
-        };
+        // TODO clock driver for syscon
+        // TODO pinctrl driver for swm
 
         uart0: serial@40064000 {
             compatible = "nxp,lpc84x-uart";
-            clocks = <&syscon kCLOCK_Uart0>;
-            swms = <&swm0 &swm0>;
-            swmfuncs = <kSWM_USART0_TXD kSWM_USART0_RXD>;
             reg = <0x40064000 0x4000>;
-            status = "disabled";
-        };
-
-        gpio0: gpio@0 {
-            compatible = "nxp,lpc84x-gpio";
-            clocks = <&syscon kCLOCK_Gpio0>;
-            reg = <0xa0000000 0x4000>;
-            interrupts = <24 2>,<25 2>,<26 2>,<27 2>;
-            gpio-controller;
-            #gpio-cells = <2>;
-            port = <0>;
-            status = "disabled";
-        };
-
-        gpio1: gpio@1 {
-            compatible = "nxp,lpc84x-gpio";
-            clocks = <&syscon kCLOCK_Gpio1>;
-            reg = <0xa0000000 0x4000>;
-            interrupts = <28 2>,<29 2>,<30 2>,<31 2>;
-            gpio-controller;
-            #gpio-cells = <2>;
-            port = <1>;
+            swm = <kSWM_USART0_TXD kSWM_USART0_RXD>;
+            clk = <kCLOCK_Uart0>;
             status = "disabled";
         };
     };

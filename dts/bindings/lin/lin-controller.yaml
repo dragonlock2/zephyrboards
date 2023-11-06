@@ -1,5 +1,3 @@
-# Common fields for LIN controllers
-
 include: base.yaml
 
 bus: lin

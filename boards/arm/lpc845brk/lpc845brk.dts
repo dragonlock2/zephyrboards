@@ -2,59 +2,19 @@
 
 #include <nxp/nxp_lpc845.dtsi>
 
-#include <zephyrboards/dt-bindings/swm/lpc84x_swm.h>
-#include <zephyrboards/dt-bindings/gpio/lpc84x_gpio.h>
-
 / {
-	model = "LPC845-BRK Development Board";
-	compatible = "nxp,lpc";
+    model = "LPC845-BRK Development Board";
+    compatible = "nxp,lpc";
 
-	chosen {
-		zephyr,sram = &sram0;
-		zephyr,flash = &flash0;
-		zephyr,console = &uart0;
-	};
-
-	aliases {
-		led0 = &led_red;
-		led1 = &led_green;
-		led2 = &led_blue;
-		sw0 = &user_button;
-	};
-
-	leds {
-		compatible = "gpio-leds";
-		led_red: led_0 {
-			gpios = <&gpio1 2 GPIO_ACTIVE_LOW>;
-		};
-		led_green: led_1 {
-			gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;
-		};
-		led_blue: led_2 {
-			gpios = <&gpio1 1 GPIO_ACTIVE_LOW>;
-		};
-	};
-
-	buttons {
-		compatible = "gpio-keys";
-		user_button: button_0 {
-			gpios = <&gpio0 4 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-			label = "user button";
-		};
-	};
+    chosen {
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+        zephyr,console = &uart0;
+    };
 };
 
 &uart0 {
-	iocon-pins = <IOCON_INDEX_PIO0_25 IOCON_INDEX_PIO0_24>;
-	swm-pins   = <kSWM_PortPin_P0_25  kSWM_PortPin_P0_24>;
-	current-speed = <115200>;
-	status = "okay";
-};
-
-&gpio0 {
-	status = "okay";
-};
-
-&gpio1 {
-	status = "okay";
+    pinctrl = <P0_25 P0_24>;
+    current-speed = <115200>;
+    status = "okay";
 };
