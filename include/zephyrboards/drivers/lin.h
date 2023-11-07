@@ -270,6 +270,8 @@ static inline int z_impl_lin_receive(const struct device *dev, uint8_t id, k_tim
     return api->receive(dev, id, timeout, callback, user_data);
 }
 
+// TODO add lin_add_tx_filter which has header and done callbacks
+
 /**
  * @brief Add a callback function for a given LIN filter
  *
