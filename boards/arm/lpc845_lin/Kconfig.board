@@ -1,0 +1,4 @@
+config BOARD_LPC845_LIN
+    bool "LPC845 LIN Breakout"
+    depends on SOC_SERIES_LPC84X
+    select SOC_PART_NUMBER_LPC845M301JHI33

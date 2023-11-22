@@ -1,0 +1,91 @@
+/dts-v1/;
+
+#include <nxp/nxp_lpc845.dtsi>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+    model = "LPC845 LIN Breakout";
+    compatible = "nxp,lpc";
+
+    chosen {
+        zephyr,sram    = &sram0;
+        zephyr,flash   = &flash0;
+        zephyr,console = &uart0;
+    };
+
+    aliases {
+        led0 = &led_r;
+        led1 = &led_g;
+        led2 = &led_b;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led_r: led_r   { gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;  };
+        led_b: led_b   { gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;  };
+        led_g: led_g   { gpios = <&gpio0 8 GPIO_ACTIVE_LOW>;  };
+        pwr_en: pwr_en { gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>; };
+    };
+};
+
+&uart0 {
+    pinctrl = <P0_25 P0_24>;
+    current-speed = <115200>;
+    status = "okay";
+};
+
+&uart1 {
+    pinctrl = <P0_17 P0_18>;
+    current-speed = <19200>;
+    status = "okay";
+    lin0: lin0 {
+        compatible = "zephyrboards,lin-uart";
+        status = "okay";
+        bitrate = <19200>;
+        max-wait-percent = <150>;
+    };
+};
+
+&uart2 {
+    pinctrl = <P0_20 P0_19>;
+    current-speed = <19200>;
+    status = "okay";
+    lin1: lin1 {
+        compatible = "zephyrboards,lin-uart";
+        status = "okay";
+        bitrate = <19200>;
+        max-wait-percent = <150>;
+    };
+};
+
+&uart3 {
+    pinctrl = <P0_21 P0_22>;
+    current-speed = <19200>;
+    status = "okay";
+    lin2: lin2 {
+        compatible = "zephyrboards,lin-uart";
+        status = "okay";
+        bitrate = <19200>;
+        max-wait-percent = <150>;
+    };
+};
+
+&uart4 {
+    pinctrl = <P0_23 P0_14>;
+    current-speed = <19200>;
+    status = "okay";
+    lin3: lin3 {
+        compatible = "zephyrboards,lin-uart";
+        status = "okay";
+        bitrate = <19200>;
+        max-wait-percent = <150>;
+    };
+};
+
+&gpio0 {
+    status = "okay";
+};
+
+&gpio1 {
+    status = "okay";
+};

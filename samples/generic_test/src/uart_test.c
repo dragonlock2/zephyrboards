@@ -14,16 +14,17 @@ static const struct device *uarts[] = {
 
 static int uart_test(void) {
     LOG_INF("starting UART test");
-    char c;
+    char c = 'a', d;
     for (int i = 0; i < NUM_UART; i++) {
-        LOG_INF("sent 'a' on UART %d", i);
-        uart_poll_out(uarts[i], 'a');
+        LOG_INF("sent '%c' on UART %d", c, i);
+        uart_poll_out(uarts[i], c);
         k_msleep(10);
-        if (uart_poll_in(uarts[i], &c) < 0) {
+        if (uart_poll_in(uarts[i], &d) < 0) {
             LOG_ERR("didn't receive char in time :(");
         } else {
-            LOG_INF("received '%c'", c);
+            LOG_INF("received '%c'", d);
         }
+        c++;
     }
     return 0;
 }

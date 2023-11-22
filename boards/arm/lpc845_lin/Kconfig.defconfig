@@ -1,0 +1,6 @@
+if BOARD_LPC845_LIN
+
+config BOARD
+    default "LPC845 LIN Breakout"
+
+endif # BOARD_LPC845_LIN

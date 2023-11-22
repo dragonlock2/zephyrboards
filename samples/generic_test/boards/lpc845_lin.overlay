@@ -1,0 +1,7 @@
+/ {
+    flub {
+        compatible = "test";
+        leds = <&led_r &led_g &led_b &pwr_en>;
+        uart = <&uart1 &uart2 &uart3 &uart4>;
+    };
+};
