@@ -1,4 +1,5 @@
 menuconfig UART_LPC84X
     bool "LPC84X UART driver"
     select SERIAL_HAS_DRIVER
+    select SERIAL_SUPPORT_INTERRUPT
     depends on SOC_SERIES_LPC84X

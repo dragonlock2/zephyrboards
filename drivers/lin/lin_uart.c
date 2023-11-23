@@ -55,6 +55,8 @@ struct lin_uart_config {
 };
 
 struct lin_uart_data {
+    // TODO optimize heavily using callbacks, this uses 3.5kB...
+
     const struct device *lin_dev; // for timeout handler
 
     struct k_sem lock;

@@ -52,7 +52,7 @@
     status = "okay";
     lin1: lin1 {
         compatible = "zephyrboards,lin-uart";
-        status = "okay";
+        status = "disabled"; // TODO enable
         bitrate = <19200>;
         max-wait-percent = <150>;
     };
@@ -64,7 +64,7 @@
     status = "okay";
     lin2: lin2 {
         compatible = "zephyrboards,lin-uart";
-        status = "okay";
+        status = "disabled"; // TODO enable
         bitrate = <19200>;
         max-wait-percent = <150>;
     };
@@ -76,7 +76,7 @@
     status = "okay";
     lin3: lin3 {
         compatible = "zephyrboards,lin-uart";
-        status = "okay";
+        status = "disabled"; // TODO enable
         bitrate = <19200>;
         max-wait-percent = <150>;
     };
