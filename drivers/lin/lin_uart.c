@@ -517,6 +517,9 @@ static inline void lin_uart_compute_timeout(const struct device *dev) {
 
     // 124 bits = 14+10+10+10*9 (break, sync, pid, data, checksum)
     data->timeout = K_USEC(10000 * 124 * cfg->max_wait_percent / data->bitrate);
+
+    // TODO use time between bytes instead of LIN spec which is header and response separately
+        // note longer for the break
 }
 
 static int lin_uart_init(const struct device *dev) {
