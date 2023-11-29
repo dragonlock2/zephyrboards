@@ -173,7 +173,6 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
         if (err > 0) {
             spurious = false;
             if (data->mode == LIN_MODE_RESPONDER && (err & (UART_ERROR_FRAMING | UART_BREAK))) {
-                lin_uart_clear_isr(dev); // flush break byte, if exists
                 lin_uart_process_fail(dev); // call callbacks if packet was in progress
                 k_timer_start(&data->timer, data->sync_timeout, K_FOREVER);
                 data->state = LIN_UART_STATE_SYNC;
@@ -245,12 +244,16 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
             } else { // LIN_MODE_RESPONDER
                 switch (data->state) {
                     case LIN_UART_STATE_SYNC:
-                        if (bite != SYNC) {
-                            LOG_ERR("invalid sync 0x%x", bite);
-                            goto lin_uart_irq_fail;
+                        if (bite == BREAK) { // break can arrive as a byte, try again
+                            k_timer_start(&data->timer, data->sync_timeout, K_FOREVER);
+                        } else {
+                            if (bite != SYNC) {
+                                LOG_ERR("invalid sync 0x%x", bite);
+                                goto lin_uart_irq_fail;
+                            }
+                            k_timer_start(&data->timer, data->timeout, K_FOREVER);
+                            data->state = LIN_UART_STATE_PID;
                         }
-                        k_timer_start(&data->timer, data->timeout, K_FOREVER);
-                        data->state = LIN_UART_STATE_PID;
                         break;
 
                     case LIN_UART_STATE_PID:
@@ -373,8 +376,8 @@ static void lin_uart_irq_handler(const struct device *uart_dev, void *lin_dev) {
         }
     }
     if (spurious) {
-        // NXP driver seems to cause lots of these...
-        LOG_ERR("spurious interrupt, unknown cause");
+        // STM32 and NXP drivers seem to cause lots of these...
+        LOG_WRN("spurious interrupt, unknown cause");
         lin_uart_release_isr(data);
     }
     k_sem_give(&data->irq_lock);
@@ -435,9 +438,10 @@ static int lin_uart_set_bitrate(const struct device *dev, uint32_t bitrate) {
         data->break_bitrate = bitrate * 9 / 13; // ~13 bit break
         if (cfg->max_wait_percent > 100) {
             // not LIN compliant, applies between individual bytes instead of header/response
-            data->timeout = K_USEC(100000 * cfg->max_wait_percent / data->bitrate);
-            data->break_timeout = K_USEC(100000 * cfg->max_wait_percent / data->break_bitrate);
-            data->sync_timeout = K_USEC(200000 * cfg->max_wait_percent / data->bitrate); // time between break and sync
+            // setting timeout to double the desired percent because NXP driver needs it
+            data->timeout = K_USEC(200000 * cfg->max_wait_percent / data->bitrate);
+            data->break_timeout = K_USEC(200000 * cfg->max_wait_percent / data->break_bitrate);
+            data->sync_timeout = K_USEC(200000 * cfg->max_wait_percent / data->bitrate);
         } else {
             data->timeout = K_FOREVER;
             data->break_timeout = K_FOREVER;
