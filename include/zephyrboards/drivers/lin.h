@@ -41,7 +41,7 @@ enum lin_action {
 /**
  * @brief LIN checksum type
  */
-enum lin_checksum_type {
+enum lin_checksum {
     /** Classic */
     LIN_CHECKSUM_CLASSIC,
     /** Enhanced */
@@ -181,7 +181,7 @@ __subsystem struct lin_driver_api {
  * @param mode Operation mode.
  *
  * @retval 0 if successful.
- * @retval -EIO General input/output error, failed to configure device.
+ * @retval -EINVAL invalid mode
  */
 __syscall int lin_set_mode(const struct device *dev, enum lin_mode mode);
 
@@ -199,7 +199,6 @@ static inline int z_impl_lin_set_mode(const struct device *dev, enum lin_mode mo
  * @retval 0 if successful.
  * @retval -ENOTSUP bitrate not supported by LIN controller/transceiver combination
  * @retval -EINVAL bitrate cannot be met.
- * @retval -EIO General input/output error, failed to set bitrate.
  */
 __syscall int lin_set_bitrate(const struct device *dev, uint32_t bitrate);
 
