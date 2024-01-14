@@ -138,7 +138,7 @@
     pinctrl-names = "default";
 
     lin0: lin0 {
-        compatible = "zephyrboards,lin-uart";
+        compatible = "virtual,lin-uart";
         status = "okay";
         bitrate = <19200>;
         max-wait-percent = <150>;

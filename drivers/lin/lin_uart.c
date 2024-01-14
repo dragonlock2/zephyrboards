@@ -1,4 +1,4 @@
-#define DT_DRV_COMPAT zephyrboards_lin_uart
+#define DT_DRV_COMPAT virtual_lin_uart
 
 #include <zephyrboards/drivers/lin.h>
 #include <zephyr/drivers/uart.h>

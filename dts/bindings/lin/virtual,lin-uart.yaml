@@ -1,6 +1,6 @@
-description: Zephyrboards LIN UART driver
+description: Virtual LIN UART driver
 
-compatible: "zephyrboards,lin-uart"
+compatible: "virtual,lin-uart"
 
 include: lin-controller.yaml
 

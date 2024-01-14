@@ -1,8 +1,8 @@
-DT_COMPAT_ZEPHYRBOARDS_LIN_UART := zephyrboards,lin-uart
+DT_COMPAT_VIRTUAL_LIN_UART := virtual,lin-uart
 
 config LIN_UART
   bool "LIN protocol over UART"
-  default $(dt_compat_enabled,$(DT_COMPAT_ZEPHYRBOARDS_LIN_UART))
+  default $(dt_compat_enabled,$(DT_COMPAT_VIRTUAL_LIN_UART))
   select UART_INTERRUPT_DRIVEN
   help
     Enable the LIN UART driver
