@@ -2,12 +2,18 @@ manifest:
   remotes:
     - name: zephyrproject-rtos
       url-base: https://github.com/zephyrproject-rtos
+    - name: openwch
+      url-base: https://github.com/openwch
 
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
       revision: v3.5.0
       import: true
+    - name: ch32x035
+      remote: openwch
+      revision: 0f6d66efa42bc83dd1def103bd0f2b4d79470550
+      path: modules/hal/wch/ch32x035
 
   self:
     path: zephyrboards
