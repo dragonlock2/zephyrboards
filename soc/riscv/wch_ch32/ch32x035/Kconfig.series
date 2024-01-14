@@ -1,0 +1,12 @@
+config SOC_SERIES_CH32X035
+    bool "WCH CH32X035 Series MCU"
+    select SOC_FAMILY_WCH_CH32
+    select RISCV_ISA_RV32I
+    select RISCV_ISA_EXT_M
+    select RISCV_ISA_EXT_A
+    select RISCV_ISA_EXT_C
+    select RISCV_ISA_EXT_ZICSR
+    select ATOMIC_OPERATIONS_BUILTIN
+
+    help
+      Enable support for WCH CH32X035 MCU series

@@ -1,0 +1,3 @@
+config BOARD_USB_PDMON
+    bool "usb_pdmon"
+    depends on SOC_CH32X035

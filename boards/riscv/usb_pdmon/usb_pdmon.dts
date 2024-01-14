@@ -1,0 +1,14 @@
+/dts-v1/;
+
+#include <wch/wch_ch32x035.dtsi>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+    model = "usb_pdmon";
+    compatible = "wch,ch32x035";
+
+    chosen {
+        zephyr,sram  = &sram0;
+        zephyr,flash = &flash0;
+    };
+};

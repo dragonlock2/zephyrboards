@@ -1,0 +1,8 @@
+choice
+    prompt "WCH CH32X035 MCU selection"
+    depends on SOC_SERIES_CH32X035
+
+config SOC_CH32X035
+    bool "CH32X035"
+
+endchoice

@@ -1,0 +1,6 @@
+if BOARD_USB_PDMON
+
+config BOARD
+    default "usb_pdmon"
+
+endif # BOARD_USB_PDMON
