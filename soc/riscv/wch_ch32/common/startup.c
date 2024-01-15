@@ -12,7 +12,7 @@ void __start(void) {
         : : : "gp"
     );
 
-#if CONFIG_SOC_CH32X035
+#if IS_ENABLED(CONFIG_SOC_CH32X035)
     __asm__ (
         "li t0, 0x1f       \n"
         "csrw 0xbc0, t0    \n" // from startup, exact effect unknown
@@ -26,13 +26,14 @@ void __start(void) {
     #error "define cpu specific settings for soc!"
 #endif
 
+    static __aligned(4) void (*isr_handler)(void) = _isr_wrapper;
     __asm__ (
         "mv t0, %0         \n"
         "li t1, 0xfffffffc \n"
         "and t0, t0, t1    \n"
         "ori t0, t0, 0x2   \n"
         "csrw mtvec, t0    \n"
-        : : "r" (&_isr_wrapper) : "t0", "t1"
+        : : "r" (&isr_handler) : "t0", "t1"
     );
 
     __reset();

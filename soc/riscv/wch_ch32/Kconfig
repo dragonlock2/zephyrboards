@@ -4,6 +4,7 @@ config SOC_FAMILY_WCH_CH32
 	select RISCV_GP
 	select INCLUDE_RESET_VECTOR
 	select BUILD_OUTPUT_HEX
+	select TICKLESS_CAPABLE
 
 config SOC_FAMILY
 	string

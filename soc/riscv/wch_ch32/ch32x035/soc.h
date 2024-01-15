@@ -1,6 +1,10 @@
-#ifndef _SOC__H_
-#define _SOC__H_
+#ifndef SOC_H
+#define SOC_H
 
 #include <soc_common.h>
 
-#endif /* _SOC__H_ */
+#ifndef _ASMLANGUAGE
+#include <ch32x035.h>
+#endif
+
+#endif // SOC_H

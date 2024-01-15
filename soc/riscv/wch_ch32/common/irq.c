@@ -1,5 +1,13 @@
 #include <zephyr/kernel.h>
 
+void arch_irq_enable(unsigned int irq) {
+    NVIC_EnableIRQ(irq);
+}
+
+void arch_irq_disable(unsigned int irq) {
+    NVIC_DisableIRQ(irq);
+}
+
 void __soc_handle_irq(unsigned long mcause) {
     (void) mcause; // do nothing
 }
