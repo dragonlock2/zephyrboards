@@ -1,0 +1,3 @@
+menuconfig GPIO_CH32
+    bool "CH32 GPIO driver"
+    default y if SOC_FAMILY_WCH_CH32

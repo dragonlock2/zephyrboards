@@ -1,5 +1,6 @@
 zephyr_library_amend()
 
+zephyr_library_sources_ifdef(CONFIG_GPIO_CH32   gpio_ch32.c)
 zephyr_library_sources_ifdef(CONFIG_GPIO_LPC84X gpio_lpc84x.c)
 
 if(CONFIG_GPIO_LPC84X)

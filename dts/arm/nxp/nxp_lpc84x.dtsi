@@ -1,7 +1,7 @@
 #include <arm/armv6-m.dtsi>
 #include <mem.h>
 
-#include <zephyrboards/dt-bindings/clock/lpc84x_clock.h>
+#include <zephyrboards/dt-bindings/clock/lpc84x-clock.h>
 #include <zephyrboards/dt-bindings/pinctrl/lpc84x-pinctrl.h>
 
 / {

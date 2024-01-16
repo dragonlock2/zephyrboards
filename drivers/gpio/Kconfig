@@ -1,5 +1,6 @@
 if GPIO
 
+rsource "Kconfig.ch32"
 rsource "Kconfig.lpc84x"
 
 config GPIO_INIT_PRIORITY

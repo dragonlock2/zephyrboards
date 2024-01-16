@@ -1,5 +1,6 @@
 zephyr_library_amend()
 
+zephyr_library_sources_ifdef(CONFIG_UART_CH32   ch32_uart.c)
 zephyr_library_sources_ifdef(CONFIG_UART_LPC84X lpc84x_uart.c)
 
 if(CONFIG_UART_LPC84X)

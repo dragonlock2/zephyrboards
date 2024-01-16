@@ -1,5 +1,6 @@
 if SERIAL
 
+rsource "Kconfig.ch32"
 rsource "Kconfig.lpc84x"
 
 endif # SERIAL

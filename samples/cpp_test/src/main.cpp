@@ -1,6 +1,6 @@
 #include <zephyr/kernel.h>
 
-int main() {
+int main(void) {
     try {
         throw 69;
     } catch (int &e) {

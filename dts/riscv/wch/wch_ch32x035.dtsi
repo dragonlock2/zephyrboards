@@ -1,6 +1,6 @@
-/dts-v1/;
-
 #include <mem.h>
+
+#include <zephyrboards/dt-bindings/clock/ch32x035-clock.h>
 
 / {
     cpus {
@@ -27,7 +27,70 @@
             compatible = "mmio-sram";
             reg = <0x20000000 DT_SIZE_K(20)>;
         };
-    };
 
-    // TODO support variants
+        // TODO interrupt controller driver for pfic
+        // TODO timer driver for systick
+        // TODO clock driver for rcc
+        // TODO pinctrl driver for gpio and remap
+        // TODO copied IP? reuse other drivers?
+
+        usart1: serial@40013800 {
+            compatible = "wch,ch32-uart";
+            reg = <0x40013800 0x400>;
+            clk = <RCC_Type_APB2 RCC_APB2Periph_USART1>;
+            irq = <32>; // USART1_IRQn
+            status = "disabled";
+        };
+
+        usart2: serial@40004400 {
+            compatible = "wch,ch32-uart";
+            reg = <0x40004400 0x400>;
+            clk = <RCC_Type_APB1 RCC_APB1Periph_USART2>;
+            irq = <39>; // USART2_IRQn
+            status = "disabled";
+        };
+
+        usart3: serial@40004800 {
+            compatible = "wch,ch32-uart";
+            reg = <0x40004800 0x400>;
+            clk = <RCC_Type_APB1 RCC_APB1Periph_USART3>;
+            irq = <42>; // USART3_IRQn
+            status = "disabled";
+        };
+
+        usart4: serial@40004C00 {
+            compatible = "wch,ch32-uart";
+            reg = <0x40004C00 0x400>;
+            clk = <RCC_Type_APB1 RCC_APB1Periph_USART4>;
+            irq = <43>; // USART4_IRQn
+            status = "disabled";
+        };
+
+        gpioa: gpio@40010800 {
+            compatible = "wch,ch32-gpio";
+            reg = <0x40010800 0x400>;
+            clk = <RCC_Type_APB2 RCC_APB2Periph_GPIOA>;
+            gpio-controller;
+			#gpio-cells = <2>;
+            status = "disabled";
+        };
+
+        gpiob: gpio@40010C00 {
+            compatible = "wch,ch32-gpio";
+            reg = <0x40010C00 0x400>;
+            clk = <RCC_Type_APB2 RCC_APB2Periph_GPIOB>;
+            gpio-controller;
+			#gpio-cells = <2>;
+            status = "disabled";
+        };
+
+        gpioc: gpio@40011000 {
+            compatible = "wch,ch32-gpio";
+            reg = <0x40011000 0x400>;
+            clk = <RCC_Type_APB2 RCC_APB2Periph_GPIOC>;
+            gpio-controller;
+			#gpio-cells = <2>;
+            status = "disabled";
+        };
+    };
 };

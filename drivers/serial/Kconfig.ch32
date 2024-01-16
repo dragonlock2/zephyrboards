@@ -1,0 +1,5 @@
+menuconfig UART_CH32
+    bool "CH32 UART driver"
+    default y if SOC_FAMILY_WCH_CH32
+    select SERIAL_HAS_DRIVER
+    select SERIAL_SUPPORT_INTERRUPT
