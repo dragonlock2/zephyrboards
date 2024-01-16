@@ -32,7 +32,7 @@ west update
 | name | notes |
 | ---- | ----- |
 | LPC84x | uart, gpio working |
-| CH32X035 | non-interrupt uart, gpio working |
+| CH32X035 | uart, non-isr gpio working |
 
 ## drivers
 

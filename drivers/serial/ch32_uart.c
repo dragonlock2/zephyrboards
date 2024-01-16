@@ -10,10 +10,17 @@ struct ch32_uart_config {
     uint32_t clock_type, clock_mask;
     uint32_t pin_tx, pin_rx;
     uint32_t remap;
+#ifdef CONFIG_UART_INTERRUPT_DRIVEN
+    void (*irq_config_func)(void);
+#endif
 };
 
 struct ch32_uart_data {
     struct uart_config uart_cfg;
+#ifdef CONFIG_UART_INTERRUPT_DRIVEN
+    uart_irq_callback_user_data_t cb;
+    void *user_data;
+#endif
 };
 
 static int ch32_uart_poll_in(const struct device *dev, unsigned char *c) {
@@ -106,6 +113,98 @@ static int ch32_uart_config_get(const struct device *dev, struct uart_config *cf
 
 #endif // CONFIG_UART_USE_RUNTIME_CONFIGURE
 
+#ifdef CONFIG_UART_INTERRUPT_DRIVEN
+
+static int ch32_uart_fifo_fill(const struct device *dev, const uint8_t *tx_data, int len) {
+    const struct ch32_uart_config *config = dev->config;
+    int num_tx = 0;
+    while ((len - num_tx > 0) && (USART_GetFlagStatus(config->base, USART_FLAG_TXE) == SET)) {
+        USART_SendData(config->base, tx_data[num_tx++]);
+    }
+    return num_tx;
+}
+
+static int ch32_uart_fifo_read(const struct device *dev, uint8_t *rx_data, const int len) {
+    const struct ch32_uart_config *config = dev->config;
+    int num_rx = 0;
+    while ((len - num_rx > 0) && (USART_GetFlagStatus(config->base, USART_FLAG_RXNE) == SET)) {
+        rx_data[num_rx++] = USART_ReceiveData(config->base);
+    }
+    return num_rx;
+}
+
+static void ch32_uart_irq_tx_enable(const struct device *dev) {
+    const struct ch32_uart_config *config = dev->config;
+    USART_ITConfig(config->base, USART_IT_TXE, ENABLE);
+}
+
+static void ch32_uart_irq_tx_disable(const struct device *dev) {
+    const struct ch32_uart_config *config = dev->config;
+    USART_ITConfig(config->base, USART_IT_TXE, DISABLE);
+}
+
+static int ch32_uart_irq_tx_ready(const struct device *dev) {
+    const struct ch32_uart_config *config = dev->config;
+    return USART_GetITStatus(config->base, USART_IT_TXE) == SET;
+}
+
+static void ch32_uart_irq_rx_enable(const struct device *dev) {
+    const struct ch32_uart_config *config = dev->config;
+    USART_ITConfig(config->base, USART_IT_RXNE, ENABLE);
+}
+
+static void ch32_uart_irq_rx_disable(const struct device *dev) {
+    const struct ch32_uart_config *config = dev->config;
+    USART_ITConfig(config->base, USART_IT_RXNE, DISABLE);
+}
+
+static int ch32_uart_irq_tx_complete(const struct device *dev) {
+    const struct ch32_uart_config *config = dev->config;
+    return USART_GetFlagStatus(config->base, USART_FLAG_TC) == SET;
+}
+
+static int ch32_uart_irq_rx_ready(const struct device *dev) {
+    const struct ch32_uart_config *config = dev->config;
+    return USART_GetITStatus(config->base, USART_IT_RXNE) == SET;
+}
+
+static void ch32_uart_irq_err_enable(const struct device *dev) {
+    const struct ch32_uart_config *config = dev->config;
+    USART_ITConfig(config->base, USART_IT_ORE_RX, ENABLE);
+    USART_ITConfig(config->base, USART_IT_PE,     ENABLE);
+    USART_ITConfig(config->base, USART_IT_FE,     ENABLE);
+}
+
+static void ch32_uart_irq_err_disable(const struct device *dev) {
+    const struct ch32_uart_config *config = dev->config;
+    USART_ITConfig(config->base, USART_IT_ORE_RX, DISABLE);
+    USART_ITConfig(config->base, USART_IT_PE,     DISABLE);
+    USART_ITConfig(config->base, USART_IT_FE,     DISABLE);
+}
+
+static int ch32_uart_irq_is_pending(const struct device *dev) {
+    return ch32_uart_irq_tx_ready(dev) || ch32_uart_irq_rx_ready(dev);
+}
+
+static int ch32_uart_irq_update(const struct device *dev) {
+    return true; // does nothing
+}
+
+static void ch32_uart_irq_callback_set(const struct device *dev, uart_irq_callback_user_data_t cb, void *user_data) {
+    struct ch32_uart_data *data = dev->data;
+    data->cb = cb;
+    data->user_data = user_data;
+}
+
+static void ch32_uart_isr(const struct device *dev) {
+    struct ch32_uart_data *data = dev->data;
+    if (data->cb) {
+        data->cb(dev, data->user_data);
+    }
+}
+
+#endif // CONFIG_UART_INTERRUPT_DRIVEN
+
 static int ch32_uart_init(const struct device *dev) {
     const struct ch32_uart_config *config = dev->config;
     struct ch32_uart_data *data = dev->data;
@@ -117,20 +216,56 @@ static int ch32_uart_init(const struct device *dev) {
     clock_control_on(config->clock_type, config->clock_mask);
 
     err = ch32_uart_configure(dev, &data->uart_cfg);
+
+#ifdef CONFIG_UART_INTERRUPT_DRIVEN
+    config->irq_config_func();
+#endif
+
     return err;
 }
 
 static const struct uart_driver_api ch32_uart_driver_api = {
-    .poll_in    = ch32_uart_poll_in,
-    .poll_out   = ch32_uart_poll_out,
-    .err_check  = ch32_uart_err_check,
+    .poll_in          = ch32_uart_poll_in,
+    .poll_out         = ch32_uart_poll_out,
+    .err_check        = ch32_uart_err_check,
 #ifdef CONFIG_UART_USE_RUNTIME_CONFIGURE
-    .configure  = ch32_uart_configure,
-    .config_get = ch32_uart_config_get,
+    .configure        = ch32_uart_configure,
+    .config_get       = ch32_uart_config_get,
+#endif
+#ifdef CONFIG_UART_INTERRUPT_DRIVEN
+    .fifo_fill        = ch32_uart_fifo_fill,
+    .fifo_read        = ch32_uart_fifo_read,
+    .irq_tx_enable    = ch32_uart_irq_tx_enable,
+    .irq_tx_disable   = ch32_uart_irq_tx_disable,
+    .irq_tx_ready     = ch32_uart_irq_tx_ready,
+    .irq_rx_enable    = ch32_uart_irq_rx_enable,
+    .irq_rx_disable   = ch32_uart_irq_rx_disable,
+    .irq_tx_complete  = ch32_uart_irq_tx_complete,
+    .irq_rx_ready     = ch32_uart_irq_rx_ready,
+    .irq_err_enable   = ch32_uart_irq_err_enable,
+    .irq_err_disable  = ch32_uart_irq_err_disable,
+    .irq_is_pending   = ch32_uart_irq_is_pending,
+    .irq_update       = ch32_uart_irq_update,
+    .irq_callback_set = ch32_uart_irq_callback_set,
 #endif
 };
 
+#ifdef CONFIG_UART_INTERRUPT_DRIVEN
+#define CH32_UART_IRQ_CONFIG(n)                        \
+    static void ch32_uart_##n##_irq_config(void) {     \
+        IRQ_CONNECT(DT_INST_PROP_BY_IDX(n, irq, 0), 0, \
+            ch32_uart_isr, DEVICE_DT_INST_GET(n), 0);  \
+        irq_enable(DT_INST_PROP_BY_IDX(n, irq, 0));                   \
+    }
+#define CH32_UART_IRQ_INIT(n) .irq_config_func = ch32_uart_##n##_irq_config,
+#else
+#define CH32_UART_IRQ_CONFIG(n)
+#define CH32_UART_IRQ_INIT(n)
+#endif // CONFIG_UART_INTERRUPT_DRIVEN
+
 #define CH32_UART_INIT(n)                                             \
+    CH32_UART_IRQ_CONFIG(n)                                           \
+                                                                      \
     static const struct ch32_uart_config ch32_uart_##n##_config = {   \
         .base       = (USART_TypeDef*) DT_INST_REG_ADDR(n),           \
         .clock_type = DT_INST_PROP_BY_IDX(n, clk, 0),                 \
@@ -138,6 +273,7 @@ static const struct uart_driver_api ch32_uart_driver_api = {
         .pin_tx     = DT_INST_PROP_BY_IDX(n, pinctrl, 0),             \
         .pin_rx     = DT_INST_PROP_BY_IDX(n, pinctrl, 1),             \
         .remap      = DT_INST_PROP_BY_IDX(n, remap, 0),               \
+        CH32_UART_IRQ_INIT(n)                                         \
     };                                                                \
                                                                       \
     static struct ch32_uart_data ch32_uart_##n##_data = {             \
