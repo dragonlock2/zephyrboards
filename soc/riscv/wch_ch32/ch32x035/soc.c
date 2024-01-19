@@ -7,8 +7,8 @@ static void clock_init(void) {
     FLASH->ACTLR = (FLASH->ACTLR & ~FLASH_ACTLR_LATENCY) | FLASH_ACTLR_LATENCY_2;
     RCC->CFGR0   = (RCC->CFGR0 & ~RCC_HPRE) | RCC_HPRE_DIV1;
 
-    // enable pin remap and EXTI
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+    RCC_AHBPeriphClockCmd (RCC_AHBPeriph_DMA1,  ENABLE); // enable DMA
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE); // enable pin remap and EXTI
 }
 
 static int wch_ch32x035_init(void) {

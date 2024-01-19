@@ -1,0 +1,9 @@
+if ADC
+
+rsource "Kconfig.ch32"
+
+config ADC_INIT_PRIORITY
+    int "ADC init priority"
+    default KERNEL_INIT_PRIORITY_DEFAULT
+
+endif # ADC

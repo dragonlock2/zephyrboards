@@ -1,0 +1,4 @@
+menuconfig ADC_CH32
+    bool "CH32 ADC driver"
+    default y
+    depends on DT_HAS_WCH_CH32_ADC_ENABLED

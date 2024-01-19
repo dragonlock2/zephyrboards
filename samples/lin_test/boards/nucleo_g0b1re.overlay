@@ -1,6 +1,6 @@
 &usart1 {
-    lin0 {
-        compatible = "zephyrboards,lin-uart";
+    lin0: lin0 {
+        compatible = "virtual,lin-uart";
         status = "okay";
         bitrate = <19200>;
         max-wait-percent = <150>;

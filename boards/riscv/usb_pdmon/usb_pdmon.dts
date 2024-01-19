@@ -1,6 +1,7 @@
 /dts-v1/;
 
 #include <wch/wch_ch32x035.dtsi>
+#include <dt-bindings/adc/adc.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <zephyrboards/dt-bindings/pinctrl/ch32x035-pinctrl.h>
 
@@ -58,4 +59,27 @@
 
 &gpioc {
     status = "okay";
+};
+
+&adc1 {
+    prescaler = <ADC_CLK_DIV16>;
+    status = "okay";
+
+    ibus_mon: channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,vref-mv = <3300>;
+		zephyr,resolution = <12>;
+	};
+
+    vbus_mon: channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_CH32(8, ADC_SAMPLE_TIME_11)>;
+		zephyr,vref-mv = <36300>; // 100k/10k divider
+		zephyr,resolution = <12>;
+	};
 };

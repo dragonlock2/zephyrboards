@@ -1,5 +1,6 @@
 menu "zephyrboards drivers"
 
+rsource "adc/Kconfig"
 rsource "gpio/Kconfig"
 rsource "lin/Kconfig"
 rsource "serial/Kconfig"

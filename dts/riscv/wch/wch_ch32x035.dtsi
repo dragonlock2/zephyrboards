@@ -1,22 +1,23 @@
 #include <mem.h>
 
+#include <zephyrboards/dt-bindings/adc/ch32x035-adc.h>
 #include <zephyrboards/dt-bindings/clock/ch32x035-clock.h>
 
 / {
     cpus {
         #address-cells = <1>;
-		#size-cells = <0>;
+        #size-cells = <0>;
 
         cpu0: cpu@0 {
             device_type = "cpu";
-			riscv,isa = "rv32imac_zicsr";
-			reg = <0>;
+            riscv,isa = "rv32imac_zicsr";
+            reg = <0>;
         };
     };
 
     soc {
         #address-cells = <1>;
-		#size-cells = <1>;
+        #size-cells = <1>;
 
         flash0: flash@0 {
             compatible = "soc-nv-flash";
@@ -71,7 +72,7 @@
             reg = <0x40010800 0x400>;
             clk = <RCC_Type_APB2 RCC_APB2Periph_GPIOA>;
             gpio-controller;
-			#gpio-cells = <2>;
+            #gpio-cells = <2>;
             status = "disabled";
         };
 
@@ -80,7 +81,7 @@
             reg = <0x40010C00 0x400>;
             clk = <RCC_Type_APB2 RCC_APB2Periph_GPIOB>;
             gpio-controller;
-			#gpio-cells = <2>;
+            #gpio-cells = <2>;
             status = "disabled";
         };
 
@@ -89,7 +90,19 @@
             reg = <0x40011000 0x400>;
             clk = <RCC_Type_APB2 RCC_APB2Periph_GPIOC>;
             gpio-controller;
-			#gpio-cells = <2>;
+            #gpio-cells = <2>;
+            status = "disabled";
+        };
+
+        adc1: adc@40012400 {
+            compatible = "wch,ch32-adc";
+            reg = <0x40012400 0x400>;
+            clk = <RCC_Type_APB2 RCC_APB2Periph_ADC1>;
+            irq = <22>; // DMA1_Channel1_IRQn
+            dma = <ADC1_DMA_CHANNEL ADC1_DMA_FLAG_TC>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            #io-channel-cells = <1>;
             status = "disabled";
         };
     };
