@@ -2,7 +2,7 @@
 #define SOC_COMMON_H
 
 #define SOC_MCAUSE_EXP_MASK        0x7FFFFFFF
-#define SOC_MCAUSE_ECALL_EXP       5
+#define SOC_MCAUSE_ECALL_EXP       11
 #define SOC_MCAUSE_USER_ECALL_EXP  8
 
 #define GPIO_GET_PORT(x)  (((x) >> 8) & 0xFF)
