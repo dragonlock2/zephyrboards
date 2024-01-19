@@ -16,8 +16,6 @@ void __start(void) {
     __asm__ (
         "li t0, 0x1f       \n"
         "csrw 0xbc0, t0    \n" // from startup, exact effect unknown
-        "li t0, 0x88       \n"
-        "csrw mstatus, t0  \n" // enable MPIE/MIE
         "li t0, 0x0        \n"
         "csrw 0x804, t0    \n" // disable interrupt nesting and hardware stacking (INTSYSCR)
         : : : "t0"

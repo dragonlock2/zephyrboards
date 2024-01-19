@@ -22,15 +22,20 @@ bool __soc_is_irq(void) {
 }
 
 /*
- * RISC-V port does a context switch w/o mret (unlike FreeRTOS), so we must do a manual
- * mret to exit the interrupt level before that. The extra mret from when the ISR actually
- * returns appears to not cause issues. Since __soc_handle_irq is called before our installed
- * handlers which would clear the interrupt source, doing an mret there would cause a retrigger
- * of the interrupt. Thus, we must do our mret workaround after calling our handler but before
- * the context switch.
+ * CH32 is not RISC-V compliant for interrupt handling since it likely pulls some behavior from
+ * ARM. Unlike normal RISC-V, CH32 relies on mret to exit the interrupt context. Since Zephyr does
+ * a context switch inside _isr_wrapper by simply jumping, the next thread remains in an interrupt
+ * context, effectively disabling same or lower priority interrupts until the next context switch.
+ * Normal RISC-V lacks this issue as the context switch will re-enable interrupts as needed. To
+ * work around this issue, we need to mret before context switching.
  * 
- * To avoid patches, the cleanest place to do this is in the call sys_trace_isr_exit immediately
- * after our handler is called. However, this does mean we can't use the trace subsystem.
+ * It should be noted that FreeRTOS does its context switching with the mret, so this issue doesn't
+ * exist for it. However, it doesn't support interrupt nesting that Zephyr's method would allow.
+ * 
+ * Like ARM, clearing an interrupt is decentralized and needs access to the source peripheral to prevent
+ * a retrigger. This means we can't add our mret to __soc_handle_irq which is called before our interrupt
+ * handler which would clear the IRQ. To avoid patches, the cleanest place to do the mret is instead in
+ * sys_trace_isr_exit. However, this does mean we can't use the trace subsystem.
  */
 __attribute__((naked))
 void sys_trace_isr_exit_user(void) {
@@ -43,5 +48,3 @@ void sys_trace_isr_exit_user(void) {
 #if !(defined(CONFIG_TRACING) && defined(CONFIG_TRACING_USER) && defined(CONFIG_TRACING_ISR))
 #error "please don't use tracing subsytem"
 #endif
-
-// TODO make __soc_handle_irq work? clear interrupt level w/o mret?
