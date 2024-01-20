@@ -33,7 +33,6 @@
         // TODO timer driver for systick
         // TODO clock driver for rcc
         // TODO pinctrl driver for gpio and remap
-        // TODO copied IP? reuse other drivers?
 
         usart1: serial@40013800 {
             compatible = "wch,ch32-uart";
@@ -103,6 +102,15 @@
             #address-cells = <1>;
             #size-cells = <0>;
             #io-channel-cells = <1>;
+            status = "disabled";
+        };
+
+        usbfs: usbd@40023400 {
+            compatible = "wch,ch32-usbfs";
+            reg = <0x40023400 0x400>;
+            clk = <RCC_Type_AHB RCC_AHBPeriph_USBFS>;
+            irq = <45>; // USBFS_IRQn
+            num-bidir-endpoints = <8>;
             status = "disabled";
         };
     };

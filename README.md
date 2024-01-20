@@ -27,12 +27,12 @@ west update
 | [lpc845_lin](https://github.com/dragonlock2/kicadboards/tree/main/breakouts/lpc845_lin) | |
 | usb_pdmon | |
 
-# microcontroller
+## microcontroller
 
 | name | notes |
 | ---- | ----- |
 | LPC84x | uart, gpio working |
-| CH32X035 | adc, uart, non-isr gpio working |
+| CH32X035 | usb, adc, uart, non-isr gpio working |
 
 ## drivers
 

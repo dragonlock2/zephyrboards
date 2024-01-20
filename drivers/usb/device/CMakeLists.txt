@@ -1,0 +1,3 @@
+zephyr_library_amend()
+
+zephyr_library_sources_ifdef(CONFIG_USB_DC_CH32_USBFS usb_dc_ch32_usbfs.c)

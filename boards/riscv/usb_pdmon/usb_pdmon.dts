@@ -83,3 +83,7 @@
 		zephyr,resolution = <12>;
 	};
 };
+
+zephyr_udc0: &usbfs {
+    status = "okay";
+};

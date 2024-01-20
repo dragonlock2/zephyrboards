@@ -1,0 +1,17 @@
+description: CH32 USBFS Device Controller
+
+compatible: "wch,ch32-usbfs"
+
+include: usb-ep.yaml
+
+properties:
+  reg:
+    required: true
+
+  irq:
+    type: array
+    required: true
+
+  clk:
+    type: array
+    required: true

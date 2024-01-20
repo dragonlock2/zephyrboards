@@ -4,5 +4,6 @@ rsource "adc/Kconfig"
 rsource "gpio/Kconfig"
 rsource "lin/Kconfig"
 rsource "serial/Kconfig"
+rsource "usb/Kconfig"
 
 endmenu

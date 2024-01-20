@@ -3,11 +3,8 @@
 #include <errno.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/adc.h>
-#include <zephyr/logging/log.h>
 #include <zephyr/irq.h>
 #include <zephyrboards/dt-bindings/adc/ch32x035-adc.h>
-
-LOG_MODULE_REGISTER(adc_ch32, CONFIG_ADC_LOG_LEVEL);
 
 #define ADC_CHANNEL_NUM  (16)
 #define RULE_CHANNEL_NUM (16)

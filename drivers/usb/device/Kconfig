@@ -1,0 +1,8 @@
+if USB_DEVICE_DRIVER
+
+menuconfig USB_DC_CH32_USBFS
+    bool "USB device controller driver for WCH CH32 USBFS devices"
+    default y
+    depends on DT_HAS_WCH_CH32_USBFS_ENABLED
+
+endif
