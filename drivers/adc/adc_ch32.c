@@ -22,21 +22,30 @@ struct adc_ch32_config {
 };
 
 struct adc_ch32_data {
+    // state
     volatile bool done;
+    int ret;
+    bool scanning;
+    uint16_t sample_idx;
+    struct k_timer timer;
+    uint16_t buffer[RULE_CHANNEL_NUM];
+    struct {
+        uint16_t *dst;
+    } rules[RULE_CHANNEL_NUM];
+
+    // options
+    const struct device *dev;
     uint8_t num_chan, num_rule;
-    uint16_t samples_left;
+    uint16_t sample_total;
+    uint32_t interval_us;
     struct k_poll_signal *async;
-    const struct adc_sequence_options *options;
+    const struct adc_sequence *sequence;
     ADC_InitTypeDef adc_cfg;
     DMA_InitTypeDef dma_cfg;
-    uint16_t buffer[RULE_CHANNEL_NUM];
     struct {
         uint16_t num_conv;
         uint8_t sample_time;
     } channels[ADC_CHANNEL_NUM];
-    struct {
-        uint16_t *dst;
-    } rules[RULE_CHANNEL_NUM];
 };
 
 static int adc_ch32_channel_setup(const struct device *dev,
@@ -74,7 +83,7 @@ static int adc_ch32_read_async(const struct device *dev, const struct adc_sequen
     struct adc_ch32_data *data = dev->data;        
 
     if (!data->done) {
-        return -EBUSY;
+        return -EAGAIN;
     }
 
     if ((sequence->channels & ~BIT_MASK(ADC_CHANNEL_NUM)) ||
@@ -103,12 +112,15 @@ static int adc_ch32_read_async(const struct device *dev, const struct adc_sequen
         }
     }
 
-    data->samples_left = 1;
-    data->options = sequence->options;
-    if (data->options) {
-        data->samples_left += data->options->extra_samplings;
+    data->interval_us = 0;
+    data->sample_total = 1;
+    data->sample_idx = 0;
+    data->sequence = sequence;
+    if (sequence->options) {
+        data->interval_us = sequence->options->interval_us;
+        data->sample_total += sequence->options->extra_samplings;
     }
-    if ((data->num_chan * data->samples_left * sizeof(uint16_t)) > sequence->buffer_size) {
+    if ((data->num_chan * data->sample_total * sizeof(uint16_t)) > sequence->buffer_size) {
         return -ENOMEM;
     }
 
@@ -118,11 +130,15 @@ static int adc_ch32_read_async(const struct device *dev, const struct adc_sequen
     DMA_Init(config->dma, &data->dma_cfg);
     DMA_Cmd(config->dma, ENABLE);
 
+    data->ret = 0;
     data->done = false;
+    data->scanning = true;
     data->async = async;
     ADC_SoftwareStartConvCmd(config->base, ENABLE);
 
-    // TODO start interval timer if needed
+    if (data->interval_us != 0) {
+        k_timer_start(&data->timer, K_USEC(data->interval_us), K_USEC(data->interval_us));
+    }
 
     return 0;
 }
@@ -132,25 +148,85 @@ static int adc_ch32_read(const struct device *dev, const struct adc_sequence *se
     int ret = adc_ch32_read_async(dev, sequence, NULL);
     if (ret == 0) {
         while (!data->done);
+        return data->ret;
     }
     return ret;
 }
 
+static void adc_ch32_finish(const struct device *dev) {
+    struct adc_ch32_data *data = dev->data;
+    if (data->async) {
+        k_poll_signal_raise(data->async, data->ret);
+    }
+    data->done = true;
+    k_timer_stop(&data->timer);
+}
+
+static void adc_ch32_repeat_scan(const struct device *dev) {
+    const struct adc_ch32_config *config = dev->config;
+    struct adc_ch32_data *data = dev->data;
+    data->scanning = true;
+    DMA_Init(config->dma, &data->dma_cfg);
+    DMA_Cmd(config->dma, ENABLE);
+    ADC_SoftwareStartConvCmd(config->base, ENABLE);
+}
+
+static void adc_ch32_timer_callback(struct k_timer *timer) {
+    struct adc_ch32_data *data = CONTAINER_OF(timer, struct adc_ch32_data, timer);
+    if (data->scanning) {
+        data->ret = -EBUSY;
+        data->interval_us = 0;
+        k_timer_stop(timer);
+    } else {
+        adc_ch32_repeat_scan(data->dev);
+    }
+}
+
 static void adc_ch32_isr(const struct device *dev) {
     const struct adc_ch32_config *config = dev->config;
-    struct adc_ch32_data *data = dev->data; 
+    struct adc_ch32_data *data = dev->data;
+    /*
+     * NOTE: implementation assumes timer and ADC ISR can't preempt each other
+     */
 
+    // process incoming data
     DMA_ClearITPendingBit(config->dma_tc);
     for (int i = 0; i < data->num_rule; i++) {
         *data->rules[i].dst = data->buffer[i];
     }
-    data->done = true;
-    if (data->async) {
-        k_poll_signal_raise(data->async, 0);
-    }
+    data->scanning = false;
 
-    // TODO add timer for more samples, only kpoll/unlock when done, but do callback each time
-        // careful if timer period too small, need to return an error
+    // do next action
+    enum adc_action action = ADC_ACTION_CONTINUE;
+    if (data->sequence->options && data->sequence->options->callback) {
+        action = data->sequence->options->callback(dev, data->sequence, data->sample_idx);
+    }
+    switch (action) {
+        case ADC_ACTION_CONTINUE:
+            data->sample_idx++;
+            if (data->sample_idx >= data->sample_total) {
+                adc_ch32_finish(dev);
+                break;
+            }
+            for (int i = 0; i < data->num_rule; i++) {
+                data->rules[i].dst += data->num_chan;
+            }
+            if (data->interval_us == 0) {
+                adc_ch32_repeat_scan(dev);
+            }
+            break;
+
+        case ADC_ACTION_REPEAT:
+            if (data->interval_us == 0) {
+                adc_ch32_repeat_scan(dev);
+            }
+            break;
+
+        case ADC_ACTION_FINISH:
+        default:
+            adc_ch32_finish(dev);
+            break;
+    }
 }
 
 static int adc_ch32_init(const struct device *dev) {
@@ -192,6 +268,9 @@ static int adc_ch32_init(const struct device *dev) {
         .DMA_Priority           = DMA_Priority_VeryHigh,
         .DMA_M2M                = DMA_M2M_Disable,
     };
+
+    data->dev = dev;
+    k_timer_init(&data->timer, adc_ch32_timer_callback, NULL);
 
     return 0;
 }
