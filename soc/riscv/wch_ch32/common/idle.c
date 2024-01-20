@@ -5,7 +5,7 @@
 static inline void riscv_idle(unsigned int key) {
     sys_trace_idle();
     irq_unlock(key);
-    __asm__ volatile ("wfi"); // technically not atomic
+    // should "wfi" here but seems to cause lost interrupts, wch_ch32/common/irq.c
 }
 
 void arch_cpu_idle(void) {

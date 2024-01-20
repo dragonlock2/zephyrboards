@@ -35,7 +35,9 @@ bool __soc_is_irq(void) {
  * Like ARM, clearing an interrupt is decentralized and needs access to the source peripheral to prevent
  * a retrigger. This means we can't add our mret to __soc_handle_irq which is called before our interrupt
  * handler which would clear the IRQ. To avoid patches, the cleanest place to do the mret is instead in
- * sys_trace_isr_exit. However, this does mean we can't use the trace subsystem.
+ * sys_trace_isr_exit. However, this does mean we can't use the trace subsystem. Another strange side effect
+ * is that the effective double mret can cause the next IRQ to be missed when used with wfi, but for some
+ * reason the SysTick IRQ isn't missed. This does mean we can't use sleep states.
  */
 __attribute__((naked))
 void sys_trace_isr_exit_user(void) {

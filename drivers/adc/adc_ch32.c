@@ -145,9 +145,12 @@ static void adc_ch32_isr(const struct device *dev) {
         *data->rules[i].dst = data->buffer[i];
     }
     data->done = true;
+    if (data->async) {
+        k_poll_signal_raise(data->async, 0);
+    }
 
-    // TODO raise kpoll
     // TODO add timer for more samples, only kpoll/unlock when done, but do callback each time
+        // careful if timer period too small, need to return an error
 }
 
 static int adc_ch32_init(const struct device *dev) {
