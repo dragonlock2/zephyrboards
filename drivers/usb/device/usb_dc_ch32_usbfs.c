@@ -114,7 +114,7 @@ static void usb_dc_ch32_usbfs_isr(const struct device *dev) {
         uint8_t token = (USBFSD->INT_ST >> 4) & 0x03;
         switch (token) {
             case 0b00: // OUT
-                *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_R_RES_MASK) | USBFS_UEP_R_RES_ACK;
+                *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_R_RES_MASK) | USBFS_UEP_R_RES_NAK;
                 dev_data.ep_state[ep][USB_OUT_IDX].rx_len = USBFSD->RX_LEN;
                 dev_data.ep_state[ep][USB_OUT_IDX].rx_idx = 0;
                 msg.ep = ep | USB_EP_DIR_OUT;
@@ -323,9 +323,9 @@ int usb_dc_ep_write(const uint8_t ep, const uint8_t *const data,
             | USBFS_UEP_T_RES_ACK | (dev_data.ep0_tog ? USBFS_UEP_T_TOG : 0);
         dev_data.ep0_tog = !dev_data.ep0_tog;
     } else if (dev_data.ep_state[ep_idx][USB_IN_IDX].isochronous) {
-        *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_NONE;
+        *EP_CTRL(ep_idx) = (*EP_CTRL(ep_idx) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_NONE;
     } else {
-        *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_ACK;
+        *EP_CTRL(ep_idx) = (*EP_CTRL(ep_idx) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_ACK;
     }
     *ret_bytes = write_cnt;
     return 0;
@@ -380,7 +380,7 @@ int usb_dc_ep_read_continue(const uint8_t ep) {
 int usb_dc_ep_read(const uint8_t ep, uint8_t *const data,
         const uint32_t max_data_len, uint32_t *const read_bytes) {
     int ret = usb_dc_ep_read_wait(ep, data, max_data_len, read_bytes);
-    if (ret == 0) {
+    if (ret >= 0) {
         ret = usb_dc_ep_read_continue(ep);
     }
     return ret;
