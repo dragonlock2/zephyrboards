@@ -31,10 +31,14 @@ static struct {
     struct {
         bool isochronous;
         uint8_t mps;
+        uint8_t rx_len, rx_idx;
         usb_dc_ep_callback cb;
     } ep_state[USB_EP_MAX][2];
     usb_dc_status_callback status_cb;
+    uint8_t addr;
     bool ep0_tog;
+    bool should_set_address;
+    bool setup_available;
     bool vdd5v;
 
     __attribute__((aligned(4))) uint8_t buffer[USB_EP_MAX][2][64]; // 256 bytes wasted :P
@@ -100,10 +104,46 @@ static volatile uint16_t *EP_CTRL(uint8_t ep) {
 
 static void usb_dc_ch32_usbfs_isr(const struct device *dev) {
     ARG_UNUSED(dev);
+    struct cb_msg msg = {
+        .ep = 0,
+        .ep_event = false,
+    };
     uint32_t status = USBFSD->INT_FG;
     if (status & USBFS_UIF_TRANSFER) {
-        // careful ep0 and ep4 are special case
-        LOG_ERR("transfer"); // TODO
+        uint8_t ep = USBFSD->INT_ST & 0x0F;
+        uint8_t token = (USBFSD->INT_ST >> 4) & 0x03;
+        switch (token) {
+            case 0b00: // OUT
+                *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_R_RES_MASK) | USBFS_UEP_R_RES_ACK;
+                dev_data.ep_state[ep][USB_OUT_IDX].rx_len = USBFSD->RX_LEN;
+                dev_data.ep_state[ep][USB_OUT_IDX].rx_idx = 0;
+                msg.ep = ep | USB_EP_DIR_OUT;
+                msg.type = USB_DC_EP_DATA_OUT;
+                msg.ep_event = true;
+                k_msgq_put(&usb_dc_msgq, &msg, K_NO_WAIT);
+                break;
+
+            case 0b10: // IN
+                if (dev_data.should_set_address) {
+                    USBFSD->DEV_ADDR = dev_data.addr;
+                    dev_data.should_set_address = false;
+                }
+                *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_NAK;
+                msg.ep = ep | USB_EP_DIR_IN;
+                msg.type = USB_DC_EP_DATA_IN;
+                msg.ep_event = true;
+                k_msgq_put(&usb_dc_msgq, &msg, K_NO_WAIT);
+                break;
+
+            case 0b11: // SETUP
+                *EP_CTRL(0) = (*EP_CTRL(0) & ~USBFS_UEP_R_RES_MASK) | USBFS_UEP_R_RES_NAK;
+                dev_data.setup_available = true;
+                msg.ep = USB_CONTROL_EP_OUT;
+                msg.type = USB_DC_EP_SETUP;
+                msg.ep_event = true;
+                k_msgq_put(&usb_dc_msgq, &msg, K_NO_WAIT);
+                break;
+        }
         USBFSD->INT_FG = USBFS_UIF_TRANSFER;
     } else if (status & USBFS_UIF_BUS_RST) {
         dev_data.ep0_tog = true;
@@ -113,19 +153,11 @@ static void usb_dc_ch32_usbfs_isr(const struct device *dev) {
         USBFSD->DEV_ADDR = 0x00;
         *EP_CTRL(0) = USBFS_UEP_T_RES_NAK | USBFS_UEP_R_RES_ACK;
 
-        struct cb_msg msg = {
-            .ep = 0,
-            .type = USB_DC_RESUME,
-            .ep_event = false,
-        };
+        msg.type = USB_DC_RESUME;
         k_msgq_put(&usb_dc_msgq, &msg, K_NO_WAIT);
         USBFSD->INT_FG = USBFS_UIF_BUS_RST;
     } else if (status & USBFS_UIF_SUSPEND) {
-        struct cb_msg msg = {
-            .ep = 0,
-            .type = USB_DC_SUSPEND,
-            .ep_event = false,
-        };
+        msg.type = USB_DC_SUSPEND;
         k_msgq_put(&usb_dc_msgq, &msg, K_NO_WAIT);
         USBFSD->INT_FG = USBFS_UIF_SUSPEND;
     }
@@ -184,13 +216,9 @@ void usb_dc_set_status_callback(const usb_dc_status_callback cb) {
 }
 
 int usb_dc_set_address(const uint8_t addr) {
-    LOG_ERR("impl set address");
-    return -ENOTSUP;
-}
-
-int usb_dc_ep_start_read(uint8_t ep, size_t len) {
-    LOG_ERR("impl start read");
-    return -ENOTSUP;
+    dev_data.should_set_address = true;
+    dev_data.addr = addr;
+    return 0;
 }
 
 int usb_dc_ep_check_cap(const struct usb_dc_ep_cfg_data *const cfg) {
@@ -226,66 +254,133 @@ int usb_dc_ep_configure(const struct usb_dc_ep_cfg_data *const ep_cfg) {
 }
 
 int usb_dc_ep_set_stall(const uint8_t ep) {
-    LOG_ERR("impl set stall");
+    LOG_ERR("usb_dc_ep_set_stall not implemented");
     return -ENOTSUP;
 }
 
 int usb_dc_ep_clear_stall(const uint8_t ep) {
-    LOG_ERR("impl clear stall");
+    LOG_ERR("usb_dc_ep_clear_stall not implemented");
     return -ENOTSUP;
 }
 
 int usb_dc_ep_is_stalled(const uint8_t ep, uint8_t *const stalled) {
-    LOG_ERR("impl is stalled");
+    LOG_ERR("usb_dc_ep_is_stalled not implemented");
     return -ENOTSUP;
 }
 
 int usb_dc_ep_enable(const uint8_t ep) {
-    LOG_ERR("probs need to start a read?"); // TODO for non ep0
-    return 0;
+    return 0; // always ready
 }
 
 int usb_dc_ep_disable(const uint8_t ep) {
-    LOG_ERR("impl ep disable");
-    return -ENOTSUP;
+    LOG_ERR("usb_dc_ep_disable not implemented");
+    return 0;
 }
 
 int usb_dc_ep_write(const uint8_t ep, const uint8_t *const data,
         const uint32_t data_len, uint32_t *const ret_bytes) {
-    LOG_ERR("impl ep write");
-    return -ENOTSUP;
+    if (USB_EP_DIR_IS_OUT(ep)) {
+        return -EINVAL;
+    }
+    uint8_t ep_idx = USB_EP_GET_IDX(ep);
+
+    uint32_t write_cnt = MIN(data_len, dev_data.ep_state[ep_idx][USB_IN_IDX].mps);
+    if (ep_idx == 0) {
+        memcpy(dev_data.ep_buffer.ep0, data, write_cnt);
+    } else if (ep_idx == 4) {
+        memcpy(dev_data.ep_buffer.ep4_in, data, write_cnt);
+    } else {
+        memcpy(dev_data.buffer[ep_idx][USB_IN_IDX], data, write_cnt);
+    }
+
+    if (ret_bytes == NULL && data_len != write_cnt) {
+        LOG_ERR("driver doesn't support writing %d bytes in one call", data_len);
+        return -ENOTSUP;
+    }
+
+    *EP_TX_LEN(ep_idx) = write_cnt;
+    if (ep_idx == 0) {
+        *EP_CTRL(0) = (*EP_CTRL(0) & ~(USBFS_UEP_T_RES_MASK | USBFS_UEP_T_TOG))
+            | USBFS_UEP_T_RES_ACK | (dev_data.ep0_tog ? USBFS_UEP_T_TOG : 0);
+        dev_data.ep0_tog = !dev_data.ep0_tog;
+    } else if (dev_data.ep_state[ep_idx][USB_IN_IDX].isochronous) {
+        *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_NONE;
+    } else {
+        *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_ACK;
+    }
+    *ret_bytes = write_cnt;
+    return 0;
 }
 
 int usb_dc_ep_read_wait(uint8_t ep, uint8_t *data,
         uint32_t max_data_len, uint32_t *read_bytes) {
-    LOG_ERR("impl ep read wait");
-    return -ENOTSUP;
+    if (USB_EP_DIR_IS_IN(ep)) {
+        return -EINVAL;
+    }
+    uint8_t ep_idx = USB_EP_GET_IDX(ep);
+
+    uint32_t read_cnt;
+    if (ep_idx == 0 && dev_data.setup_available) {
+        read_cnt = sizeof(struct usb_setup_packet);
+    } else {
+        read_cnt = dev_data.ep_state[ep_idx][USB_OUT_IDX].rx_len - dev_data.ep_state[ep_idx][USB_OUT_IDX].rx_idx;
+    }
+
+    if (data == NULL && max_data_len == 0) {
+        return read_cnt;
+    }
+
+    read_cnt = MIN(read_cnt, max_data_len);
+    if (ep_idx == 0 && dev_data.setup_available) {
+        dev_data.setup_available = false;
+        memcpy(data, dev_data.ep_buffer.ep0, read_cnt);
+    } else {
+        uint8_t rx_idx = dev_data.ep_state[ep_idx][USB_OUT_IDX].rx_idx;
+        if (ep_idx == 0) {
+            memcpy(data, dev_data.ep_buffer.ep0 + rx_idx, read_cnt);
+        } else if (ep_idx == 4) {
+            memcpy(data, dev_data.ep_buffer.ep4_out + rx_idx, read_cnt);
+        } else {
+            memcpy(data, dev_data.buffer[ep_idx][USB_OUT_IDX] + rx_idx, read_cnt);
+        }
+        dev_data.ep_state[ep_idx][USB_OUT_IDX].rx_idx += read_cnt;
+    }
+    *read_bytes = read_cnt;
+    return 0;
 }
 
 int usb_dc_ep_read_continue(const uint8_t ep) {
-    LOG_ERR("impl ep read continue");
-    return -ENOTSUP;
+    if (USB_EP_DIR_IS_IN(ep)) {
+        return -EINVAL;
+    }
+    uint8_t ep_idx = USB_EP_GET_IDX(ep);
+    *EP_CTRL(ep_idx) = (*EP_CTRL(ep_idx) & ~USBFS_UEP_R_RES_MASK) | USBFS_UEP_R_RES_ACK;
+    return 0;
 }
 
 int usb_dc_ep_read(const uint8_t ep, uint8_t *const data,
         const uint32_t max_data_len, uint32_t *const read_bytes) {
-    LOG_ERR("impl ep read");
-    return -ENOTSUP;
+    int ret = usb_dc_ep_read_wait(ep, data, max_data_len, read_bytes);
+    if (ret == 0) {
+        ret = usb_dc_ep_read_continue(ep);
+    }
+    return ret;
 }
 
 int usb_dc_ep_halt(const uint8_t ep) {
-    LOG_ERR("impl ep halt");
-    return -ENOTSUP;
+    LOG_ERR("usb_dc_ep_halt not implemented");
+    return 0;
 }
 
 int usb_dc_ep_flush(const uint8_t ep) {
-    LOG_ERR("impl ep flush");
-    return -ENOTSUP;
+    LOG_ERR("usb_dc_ep_flush not implemented");
+    return 0;
 }
 
 int usb_dc_ep_mps(const uint8_t ep) {
-    LOG_ERR("impl ep mps");
-    return -ENOTSUP;
+    uint8_t ep_idx = USB_EP_GET_IDX(ep);
+    bool is_in = USB_EP_GET_DIR(ep) == USB_EP_DIR_IN;
+    return dev_data.ep_state[ep_idx][is_in].mps;
 }
 
 int usb_dc_detach(void) {
@@ -299,11 +394,13 @@ int usb_dc_detach(void) {
 }
 
 int usb_dc_reset(void) {
-    return -ENOTSUP;
+    LOG_ERR("usb_dc_reset not implemented");
+    return 0;
 }
 
 int usb_dc_wakeup_request(void) {
-    return -ENOTSUP;
+    LOG_ERR("usb_dc_wakeup_request not implemented");
+    return 0;
 }
 
 // following usb_dc_rpi_pico.c and deferring callbacks
