@@ -255,18 +255,36 @@ int usb_dc_ep_configure(const struct usb_dc_ep_cfg_data *const ep_cfg) {
 }
 
 int usb_dc_ep_set_stall(const uint8_t ep) {
-    LOG_ERR("usb_dc_ep_set_stall not implemented");
-    return -ENOTSUP;
+    uint8_t ep_idx = USB_EP_GET_IDX(ep);
+    bool is_in = USB_EP_GET_DIR(ep) == USB_EP_DIR_IN;
+    if (is_in) {
+        *EP_CTRL(ep_idx) = (*EP_CTRL(ep_idx) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_STALL;
+    } else {
+        *EP_CTRL(ep_idx) = (*EP_CTRL(ep_idx) & ~USBFS_UEP_R_RES_MASK) | USBFS_UEP_R_RES_STALL;
+    }
+    return 0;
 }
 
 int usb_dc_ep_clear_stall(const uint8_t ep) {
-    LOG_ERR("usb_dc_ep_clear_stall not implemented");
-    return -ENOTSUP;
+    uint8_t ep_idx = USB_EP_GET_IDX(ep);
+    bool is_in = USB_EP_GET_DIR(ep) == USB_EP_DIR_IN;
+    if (is_in) {
+        *EP_CTRL(ep_idx) = (*EP_CTRL(ep_idx) & ~(USBFS_UEP_T_TOG | USBFS_UEP_T_RES_MASK)) | USBFS_UEP_T_RES_NAK;
+    } else {
+        *EP_CTRL(ep_idx) = (*EP_CTRL(ep_idx) & ~(USBFS_UEP_R_TOG | USBFS_UEP_R_RES_MASK)) | USBFS_UEP_R_RES_ACK;
+    }
+    return 0;
 }
 
 int usb_dc_ep_is_stalled(const uint8_t ep, uint8_t *const stalled) {
-    LOG_ERR("usb_dc_ep_is_stalled not implemented");
-    return -ENOTSUP;
+    uint8_t ep_idx = USB_EP_GET_IDX(ep);
+    bool is_in = USB_EP_GET_DIR(ep) == USB_EP_DIR_IN;
+    if (is_in) {
+        *stalled = (*EP_CTRL(ep_idx) & USBFS_UEP_T_RES_MASK) == USBFS_UEP_T_RES_STALL;
+    } else {
+        *stalled = (*EP_CTRL(ep_idx) & USBFS_UEP_R_RES_MASK) == USBFS_UEP_R_RES_STALL;
+    }
+    return 0;
 }
 
 int usb_dc_ep_enable(const uint8_t ep) {
