@@ -152,9 +152,11 @@ static int adc_ch32_read(const struct device *dev, const struct adc_sequence *se
 
 static void adc_ch32_finish(const struct device *dev) {
     struct adc_ch32_data *data = dev->data;
+#ifdef CONFIG_POLL
     if (data->async) {
         k_poll_signal_raise(data->async, data->ret);
     }
+#endif
     data->done = true;
     k_timer_stop(&data->timer);
 }

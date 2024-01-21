@@ -22,28 +22,43 @@ bool __soc_is_irq(void) {
 }
 
 /*
- * CH32 is not RISC-V compliant for interrupt handling since it likely pulls some behavior from
- * ARM. Unlike normal RISC-V, CH32 relies on mret to exit the interrupt context. Since Zephyr does
- * a context switch inside _isr_wrapper by simply jumping, the next thread remains in an interrupt
- * context, effectively disabling same or lower priority interrupts until the next context switch.
- * Normal RISC-V lacks this issue as the context switch will re-enable interrupts as needed. To
- * work around this issue, we need to mret before context switching.
+ * For normal RISC-V, interrupts are disabled (MIE=0) upon entering an ISR and get re-enabled on
+ * return (mret sets MIE=MPIE). While in the ISR, it's possible to manually re-enable interrupts,
+ * after clearing the IRQ of course, and simply jump elsewhere. Zephyr uses this to implement context
+ * switches from within _isr_wrapper.
  * 
- * It should be noted that FreeRTOS does its context switching with the mret, so this issue doesn't
- * exist for it. However, it doesn't support interrupt nesting that Zephyr's method would allow.
+ * In order to support interrupt nesting, CH32 doesn't follow these assumptions. Interrupts remain
+ * enabled (MIE=1) and an mret is required to exit the interrupt level. Since Zephyr's context switch
+ * simply jumps without mret, the next thread will effectively have same or lower priority interrupts
+ * disabled. It should be noted that FreeRTOS does context switches using mret so it lacks this issue,
+ * but it also doesn't currently support nesting.
  * 
- * Like ARM, clearing an interrupt is decentralized and needs access to the source peripheral to prevent
- * a retrigger. This means we can't add our mret to __soc_handle_irq which is called before our interrupt
- * handler which would clear the IRQ. To avoid patches, the cleanest place to do the mret is instead in
- * sys_trace_isr_exit. However, this does mean we can't use the trace subsystem. Another strange side effect
- * is that the effective double mret can cause the next IRQ to be missed when used with wfi, but for some
- * reason the SysTick IRQ isn't missed. This does mean we can't use sleep states.
+ * The workaround consists of three parts. First, we need to mret before a context switch in _isr_wrapper.
+ * We can't do it in __soc_handle_irq since our installed handlers which clear the IRQ get called after.
+ * The cleanest way is instead hooking into sys_trace_isr_exit, which does mean we can't use the trace
+ * subsystem. Since interrupts must remain disabled after this added mret, we clear MPIE, do the ret, then
+ * set MPIE again. The double mret would definitely mess with CH32 interrupt nesting, so we completely disable
+ * that in INTSYSCR.
+ * 
+ * Second, we need to make a wrapper around _isr_wrapper, which we call _isr_wrapper_wrapper, that clears
+ * MIE before jumping to _isr_wrapper. Since _isr_wrapper saves and restores mstatus, having MIE=1 and our
+ * added mret can unintentionally re-enable interrupts before _isr_wrapper returns.
+ * 
+ * Third, we need to disable wfi inside the idle thread. Unforunately, it looks like the double mret can
+ * cause the next IRQ to be missed. This does mean we can't use sleep states effectively.
  */
 __attribute__((naked))
 void sys_trace_isr_exit_user(void) {
     __asm__ (
-        "csrw mepc, ra \n"
-        "mret          \n"
+        "li a0, 0x1800    \n" // disable MPIE so MIE disabled after mret
+        "csrw mstatus, a0 \n"
+        "la a0, 1f        \n"
+        "csrw mepc, a0    \n"
+        "mret             \n"
+    "1:"
+        "li a0, 0x1880    \n" // enable MPIE so MIE restored correctly
+        "csrw mstatus, a0 \n"
+        "ret              \n"
     );
 }
 

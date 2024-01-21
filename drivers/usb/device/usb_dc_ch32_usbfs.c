@@ -124,11 +124,11 @@ static void usb_dc_ch32_usbfs_isr(const struct device *dev) {
                 break;
 
             case 0b10: // IN
+                *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_NAK;
                 if (dev_data.should_set_address) {
                     USBFSD->DEV_ADDR = dev_data.addr;
                     dev_data.should_set_address = false;
                 }
-                *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_NAK;
                 msg.ep = ep | USB_EP_DIR_IN;
                 msg.type = USB_DC_EP_DATA_IN;
                 msg.ep_event = true;
@@ -137,6 +137,7 @@ static void usb_dc_ch32_usbfs_isr(const struct device *dev) {
 
             case 0b11: // SETUP
                 *EP_CTRL(0) = (*EP_CTRL(0) & ~USBFS_UEP_R_RES_MASK) | USBFS_UEP_R_RES_NAK;
+                dev_data.ep0_tog = true;
                 dev_data.setup_available = true;
                 msg.ep = USB_CONTROL_EP_OUT;
                 msg.type = USB_DC_EP_SETUP;

@@ -2,6 +2,14 @@
 
 extern void __reset(void);
 
+__attribute__((naked))
+static void _isr_wrapper_wrapper(void) {
+    __asm__ (
+        "csrci mstatus, 0x8 \n" // clear MIE, matching RISC-V spec
+        "j _isr_wrapper     \n"
+    );
+}
+
 __attribute__((naked, section(".vectors.reset")))
 void __start(void) {
     __asm__ (
@@ -24,7 +32,7 @@ void __start(void) {
     #error "define cpu specific settings for soc!"
 #endif
 
-    static __aligned(4) void (*isr_handler)(void) = _isr_wrapper;
+    static __aligned(4) void (*isr_handler)(void) = _isr_wrapper_wrapper;
     __asm__ (
         "mv t0, %0         \n"
         "li t1, 0xfffffffc \n"
