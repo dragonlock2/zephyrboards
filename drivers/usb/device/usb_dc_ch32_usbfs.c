@@ -37,6 +37,7 @@ static struct {
     usb_dc_status_callback status_cb;
     uint8_t addr;
     bool ep0_tog;
+    bool ep4_tog;
     bool should_set_address;
     bool setup_available;
     bool vdd5v;
@@ -128,6 +129,9 @@ static void usb_dc_ch32_usbfs_isr(const struct device *dev) {
                 if (dev_data.should_set_address) {
                     USBFSD->DEV_ADDR = dev_data.addr;
                     dev_data.should_set_address = false;
+                }
+                if (ep == 4) {
+                    dev_data.ep4_tog = !dev_data.ep4_tog;
                 }
                 msg.ep = ep | USB_EP_DIR_IN;
                 msg.type = USB_DC_EP_DATA_IN;
@@ -243,6 +247,9 @@ int usb_dc_ep_configure(const struct usb_dc_ep_cfg_data *const ep_cfg) {
         if (is_in) {
             *EP_TX_LEN(ep) = 0;
             *EP_CTRL(ep) = (*EP_CTRL(ep) & ~(USBFS_UEP_T_TOG | USBFS_UEP_T_RES_MASK)) | USBFS_UEP_T_RES_NAK;
+            if (ep == 4) {
+                dev_data.ep4_tog = false;
+            }
         } else {
             if (dev_data.ep_state[ep][is_in].isochronous) {
                 *EP_CTRL(ep) = (*EP_CTRL(ep) & ~(USBFS_UEP_R_TOG | USBFS_UEP_R_RES_MASK)) | USBFS_UEP_R_RES_NONE;
@@ -322,12 +329,18 @@ int usb_dc_ep_write(const uint8_t ep, const uint8_t *const data,
         *EP_CTRL(0) = (*EP_CTRL(0) & ~(USBFS_UEP_T_RES_MASK | USBFS_UEP_T_TOG))
             | USBFS_UEP_T_RES_ACK | (dev_data.ep0_tog ? USBFS_UEP_T_TOG : 0);
         dev_data.ep0_tog = !dev_data.ep0_tog;
-    } else if (dev_data.ep_state[ep_idx][USB_IN_IDX].isochronous) {
-        *EP_CTRL(ep_idx) = (*EP_CTRL(ep_idx) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_NONE;
     } else {
-        *EP_CTRL(ep_idx) = (*EP_CTRL(ep_idx) & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_ACK;
+        uint16_t expect = dev_data.ep_state[ep_idx][USB_IN_IDX].isochronous ? USBFS_UEP_T_RES_NONE : USBFS_UEP_T_RES_ACK;
+        if (ep_idx == 4) {
+            *EP_CTRL(4) = (*EP_CTRL(4) & ~(USBFS_UEP_T_RES_MASK | USBFS_UEP_T_TOG))
+                | expect | (dev_data.ep4_tog ? USBFS_UEP_T_TOG : 0);
+        } else {
+            *EP_CTRL(ep_idx) = (*EP_CTRL(ep_idx) & ~USBFS_UEP_T_RES_MASK) | expect;
+        }
     }
-    *ret_bytes = write_cnt;
+    if (ret_bytes) {
+        *ret_bytes = write_cnt;
+    }
     return 0;
 }
 
