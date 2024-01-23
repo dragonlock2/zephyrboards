@@ -1,0 +1,4 @@
+menuconfig USBC_TCPC_CH32
+    bool "USB-C TCPC device controller driver"
+    default y
+    depends on DT_HAS_WCH_CH32_UCPD_ENABLED

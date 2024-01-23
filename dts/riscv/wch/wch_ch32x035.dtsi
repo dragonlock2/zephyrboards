@@ -113,5 +113,13 @@
             num-bidir-endpoints = <8>;
             status = "disabled";
         };
+
+        usbpd: usbpd@40027000 {
+            compatible = "wch,ch32-ucpd";
+            reg = <0x40027000 0x400>;
+            clk = <RCC_Type_AHB RCC_AHBPeriph_USBPD>;
+            irq = <49>; // USBPD_IRQn
+            status = "disabled";
+        };
     };
 };

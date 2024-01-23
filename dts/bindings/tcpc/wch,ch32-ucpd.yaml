@@ -1,0 +1,17 @@
+description: CH32 USB PD Device Controller
+
+compatible: "wch,ch32-ucpd"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
+
+  irq:
+    type: array
+    required: true
+
+  clk:
+    type: array
+    required: true

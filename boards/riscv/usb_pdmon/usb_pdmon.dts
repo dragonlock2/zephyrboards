@@ -3,6 +3,7 @@
 #include <wch/wch_ch32x035.dtsi>
 #include <dt-bindings/adc/adc.h>
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/usb-c/pd.h>
 #include <zephyrboards/dt-bindings/pinctrl/ch32x035-pinctrl.h>
 
 / {
@@ -23,10 +24,24 @@
 
     leds {
         compatible = "gpio-leds";
-        led_r:   led_r   { gpios = <&gpioa 7 GPIO_ACTIVE_LOW>; };
-        led_g:   led_g   { gpios = <&gpiob 3 GPIO_ACTIVE_LOW>; };
-        led_b:   led_b   { gpios = <&gpiob 0 GPIO_ACTIVE_LOW>; };
-        vbus_en: vbus_en { gpios = <&gpioc 3 0>;               };
+        led_r:   led_r   { gpios = <&gpioa 7 GPIO_ACTIVE_LOW>;  };
+        led_g:   led_g   { gpios = <&gpiob 3 GPIO_ACTIVE_LOW>;  };
+        led_b:   led_b   { gpios = <&gpiob 0 GPIO_ACTIVE_LOW>;  };
+        vbus_en: vbus_en { gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>; };
+    };
+
+    ports {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        port1: usbc-port@1 {
+            compatible = "usb-c-connector";
+            reg = <1>;
+            tcpc = <&usbpd>;
+            vbus = <&vbus1>;
+            power-role = "sink";
+            sink-pdos = <PDO_FIXED(5000, 100, 0)>; // app can override
+        };
     };
 };
 
@@ -45,7 +60,6 @@
         compatible = "virtual,lin-uart";
         status = "okay";
         bitrate = <19200>;
-        max-wait-percent = <200>;
     };
 };
 
@@ -66,24 +80,36 @@
     status = "okay";
 
     ibus_mon: channel@0 {
-		reg = <0>;
-		zephyr,gain = "ADC_GAIN_1";
-		zephyr,reference = "ADC_REF_INTERNAL";
-		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-		zephyr,vref-mv = <3300>;
-		zephyr,resolution = <12>;
-	};
+        reg = <0>;
+        zephyr,gain = "ADC_GAIN_1";
+        zephyr,reference = "ADC_REF_INTERNAL";
+        zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+        zephyr,vref-mv = <3300>;
+        zephyr,resolution = <12>;
+    };
 
     vbus_mon: channel@1 {
-		reg = <1>;
-		zephyr,gain = "ADC_GAIN_1";
-		zephyr,reference = "ADC_REF_INTERNAL";
-		zephyr,acquisition-time = <ADC_ACQ_TIME_CH32(8, ADC_SAMPLE_TIME_11)>;
-		zephyr,vref-mv = <36300>; // 100k/10k divider
-		zephyr,resolution = <12>;
-	};
+        reg = <1>;
+        zephyr,gain = "ADC_GAIN_1";
+        zephyr,reference = "ADC_REF_INTERNAL";
+        zephyr,acquisition-time = <ADC_ACQ_TIME_CH32(8, ADC_SAMPLE_TIME_11)>;
+        zephyr,vref-mv = <3300>;
+        zephyr,resolution = <12>;
+    };
+
+    vbus1: vbus {
+        compatible = "zephyr,usb-c-vbus-adc";
+        io-channels = <&adc1 1>; // vbus_mon
+        output-ohms = <10000>;
+        full-ohms = <(100000 + 10000)>;
+        power-gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>; // vbus_en
+    };
 };
 
 zephyr_udc0: &usbfs {
+    status = "okay";
+};
+
+&usbpd {
     status = "okay";
 };

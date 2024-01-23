@@ -1,0 +1,5 @@
+if USBC_TCPC_DRIVER
+
+rsource "Kconfig.ch32"
+
+endif # USBC_TCPC_DRIVER
