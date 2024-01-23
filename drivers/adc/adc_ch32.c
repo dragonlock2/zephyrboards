@@ -280,6 +280,7 @@ static const struct adc_driver_api adc_ch32_driver_api = {
 #ifdef CONFIG_ADC_ASYNC
     .read_async    = adc_ch32_read_async,
 #endif
+    .ref_internal  = DT_INST_PROP(0, vref_mv),
 };
 
 #define ADC_CH32_INIT(n)                                                          \

@@ -25,6 +25,10 @@ properties:
     type: int
     required: true
     description: ADC clock prescaler, use macros
+  
+  vref-mv:
+    type: int
+    required: true
 
   "#io-channel-cells":
     const: 1

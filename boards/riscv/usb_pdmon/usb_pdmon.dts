@@ -76,6 +76,7 @@
 };
 
 &adc1 {
+    vref-mv = <3300>; // mV
     prescaler = <ADC_CLK_DIV16>;
     status = "okay";
 
@@ -84,7 +85,6 @@
         zephyr,gain = "ADC_GAIN_1";
         zephyr,reference = "ADC_REF_INTERNAL";
         zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-        zephyr,vref-mv = <3300>;
         zephyr,resolution = <12>;
     };
 
@@ -93,7 +93,6 @@
         zephyr,gain = "ADC_GAIN_1";
         zephyr,reference = "ADC_REF_INTERNAL";
         zephyr,acquisition-time = <ADC_ACQ_TIME_CH32(8, ADC_SAMPLE_TIME_11)>;
-        zephyr,vref-mv = <3300>;
         zephyr,resolution = <12>;
     };
 
