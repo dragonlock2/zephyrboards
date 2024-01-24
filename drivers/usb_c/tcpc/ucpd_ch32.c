@@ -9,27 +9,6 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(ucpd_ch32, CONFIG_USBC_LOG_LEVEL);
 
-// register fields copied from <ch32x035_usbpd.h>
-#define USBPD_IN_HVT  (1 << 9)
-#define USBPD_PHY_V33 (1 << 8)
-
-#define CC_SEL        (1 << 2)
-
-#define CC_PU_Mask    (3 << 2)
-#define CC_NO_PU      (0 << 2)
-#define CC_PU_330     (1 << 2)
-#define CC_PU_180     (2 << 2)
-#define CC_PU_80      (3 << 2)
-#define CC_CMP_Mask   (7 << 5)
-#define CC_NO_CMP     (0 << 5)
-#define CC_CMP_22     (2 << 5)
-#define CC_CMP_45     (3 << 5)
-#define CC_CMP_55     (4 << 5)
-#define CC_CMP_66     (5 << 5)
-#define CC_CMP_95     (6 << 5)
-#define CC_CMP_123    (7 << 5)
-#define PA_CC_AI      (1 << 0)
-
 struct ucpd_ch32_config {
     USBPD_TypeDef *base;
     uint32_t clock_type, clock_mask;
@@ -44,6 +23,15 @@ struct ucpd_ch32_data {
     enum tc_cc_polarity polarity;
     enum tc_rp_value rp;
     bool rp_enable;
+    bool rx_sop_prime;
+    enum tc_power_role power_role;
+    enum tc_data_role data_role;
+    __attribute__((aligned(4))) uint8_t buffer[512];
+    struct k_sem tx_lock;
+    bool tx_good_crc;
+    struct k_sem rx_msg_lock;
+    struct pd_msg rx_msg;
+    bool rx_msg_valid;
 };
 
 static void ucpd_ch32_update_rp(const struct device *dev) {
@@ -65,6 +53,73 @@ static void ucpd_ch32_update_rp(const struct device *dev) {
     }
     config->base->PORT_CC1 = (config->base->PORT_CC1 & ~CC_PU_Mask) | source;
     config->base->PORT_CC2 = (config->base->PORT_CC2 & ~CC_PU_Mask) | source;
+}
+
+static void ucpd_ch32_notify_alert(const struct device *dev, enum tcpc_alert alert) {
+    struct ucpd_ch32_data *data = dev->data;
+    if (data->alert_cb) {
+        data->alert_cb(dev, data->alert_data, alert);
+    }
+}
+
+static void ucpd_ch32_start_rx(const struct device *dev) {
+    const struct ucpd_ch32_config *config = dev->config;
+    config->base->CONFIG      |= PD_ALL_CLR;
+    config->base->CONFIG      &= ~PD_ALL_CLR;
+    config->base->CONTROL     &= ~PD_TX_EN;
+    config->base->BMC_CLK_CNT  = UPD_TMR_RX_48M;
+    config->base->CONTROL     |= BMC_START;
+}
+
+static void ucpd_ch32_start_tx(const struct device *dev, enum pd_packet_type type,
+        union pd_header header, uint8_t *buffer, uint32_t len) {
+    const struct ucpd_ch32_config *config = dev->config;
+    struct ucpd_ch32_data *data = dev->data;
+    
+    // setup packet
+    len = MIN(len, sizeof(data->buffer) - 2);
+    switch (type) {
+        case PD_PACKET_SOP:           config->base->TX_SEL = UPD_SOP0;        break;
+        case PD_PACKET_SOP_PRIME:     config->base->TX_SEL = UPD_SOP1;        break;
+        case PD_PACKET_PRIME_PRIME:   config->base->TX_SEL = UPD_SOP2;        break;
+        case PD_PACKET_TX_HARD_RESET: config->base->TX_SEL = UPD_HARD_RESET;  break;
+        case PD_PACKET_CABLE_RESET:   config->base->TX_SEL = UPD_CABLE_RESET; break;
+        default:
+            LOG_WRN("unsupported packet type %d, default to SOP", type);
+            config->base->TX_SEL = UPD_SOP0;
+            break;
+    }
+    config->base->BMC_TX_SZ = 2 + len;
+    data->buffer[0] = (header.raw_value >> 0) & 0xFF;
+    data->buffer[1] = (header.raw_value >> 8) & 0xFF;
+    memcpy(&data->buffer[2], buffer, len);
+
+    // send packet
+    if (data->polarity == TC_POLARITY_CC1) {
+        config->base->PORT_CC1 |= CC_LVE;
+    } else { // TC_POLARITY_CC2
+        config->base->PORT_CC2 |= CC_LVE;
+    }
+    config->base->BMC_CLK_CNT  = UPD_TMR_TX_48M;
+    config->base->CONTROL     |= PD_TX_EN;
+    config->base->STATUS      &= BMC_AUX_INVALID;
+    config->base->CONTROL     |= BMC_START;
+}
+
+static void ucpd_ch32_end_tx(const struct device *dev) {
+    const struct ucpd_ch32_config *config = dev->config;
+    struct ucpd_ch32_data *data = dev->data;
+    if (data->polarity == TC_POLARITY_CC1) {
+        config->base->PORT_CC1 &= ~CC_LVE;
+    } else { // TC_POLARITY_CC2
+        config->base->PORT_CC2 &= ~CC_LVE;
+    }
+}
+
+static bool ucpd_ch32_is_good_crc(union pd_header header) {
+    return header.number_of_data_objects == 0 &&
+           header.extended == 0 &&
+           header.message_type == PD_CTRL_GOOD_CRC;
 }
 
 static int ucpd_ch32_set_alert_handler_cb(const struct device *dev,
@@ -148,13 +203,30 @@ static int ucpd_ch32_get_cc(const struct device *dev,
 }
 
 static int ucpd_ch32_receive_data(const struct device *dev, struct pd_msg *msg) {
-    LOG_ERR("ucpd_ch32_receive_data"); // TODO filter SOP packets only?
-    return -ENOSYS;
+    int ret = -EIO;
+    struct ucpd_ch32_data *data = dev->data;
+    if (k_sem_take(&data->rx_msg_lock, K_NO_WAIT) == 0) {
+        if (data->rx_msg_valid) {
+            *msg = data->rx_msg;
+            ret = data->rx_msg.len + 2; // usbc_prl.c checks > 0
+            data->rx_msg_valid = false;
+        }
+        k_sem_give(&data->rx_msg_lock);
+    }
+    return ret;
 }
 
 static int ucpd_ch32_transmit_data(const struct device *dev, struct pd_msg *msg) {
-    LOG_ERR("ucpd_ch32_transmit_data"); // TODO return to rx right after
-    return -ENOSYS;
+    struct ucpd_ch32_data *data = dev->data;
+    if (k_sem_take(&data->tx_lock, K_MSEC(10))) {
+        LOG_ERR("timeout waiting for transmit done");
+        return -EIO;
+    } else {
+        data->tx_good_crc = false;
+        ucpd_ch32_start_tx(dev, msg->type, msg->header, msg->data, msg->len);
+        return 0;
+    }
+    return 0;
 }
 
 static int ucpd_ch32_select_rp_value(const struct device *dev, enum tc_rp_value rp) {
@@ -191,12 +263,13 @@ static int ucpd_ch32_set_cc(const struct device *dev, enum tc_cc_pull pull) {
 
 static int ucpd_ch32_set_roles(const struct device *dev,
         enum tc_power_role power_role, enum tc_data_role data_role) {
-    LOG_WRN("ucpd_ch32_set_roles not implemented");
-    return -ENOSYS;
-}
-
-static void ucpd_ch32_isr(const struct device *dev) {
-    LOG_ERR("isr %p", dev); // TODO impl, call alert cb
+    struct ucpd_ch32_data *data = dev->data;
+    data->power_role = power_role;
+    data->data_role = data_role;
+    if (data->data_role == TC_ROLE_DFP) {
+        LOG_WRN("USB driver doesn't support host mode yet");
+    }
+    return 0;
 }
 
 static void ucpd_ch32_set_vconn_cb(const struct device *dev, tcpc_vconn_control_cb_t vconn_cb) {
@@ -235,6 +308,77 @@ static int ucpd_ch32_set_cc_polarity(const struct device *dev, enum tc_cc_polari
     return 0;
 }
 
+static int ucpd_ch32_sop_prime_enable(const struct device *dev, bool enable) {
+    struct ucpd_ch32_data *data = dev->data;
+    data->rx_sop_prime = enable;
+    return 0;
+}
+
+static void ucpd_ch32_isr(const struct device *dev) {
+    const struct ucpd_ch32_config *config = dev->config;
+    struct ucpd_ch32_data *data = dev->data;
+    uint8_t status = config->base->STATUS;
+    if (status & IF_RX_ACT) {
+        uint16_t byte_count = config->base->BMC_BYTE_CNT;
+        if ((byte_count < (2 + 4)) || (byte_count > (PD_MAX_EXTENDED_MSG_LEN + 2 + 4))) {
+            LOG_ERR("invalid packet length");
+        } else {
+            if (k_sem_take(&data->rx_msg_lock, K_NO_WAIT)) {
+                LOG_ERR("message overrun, dropping new packet");
+            } else {
+                switch (status & MASK_PD_STAT) {
+                    case PD_RX_SOP0:      data->rx_msg.type = PD_PACKET_SOP;         break;
+                    case PD_RX_SOP1_HRST: data->rx_msg.type = PD_PACKET_SOP_PRIME;   break;
+                    case PD_RX_SOP2_CRST: data->rx_msg.type = PD_PACKET_PRIME_PRIME; break;
+                    default:              data->rx_msg.type = PD_PACKET_MSG_INVALID; break;
+                }
+                data->rx_msg.header.raw_value = (data->buffer[1] << 8) | data->buffer[0];
+                data->rx_msg.len = byte_count - 2 - 4; // remove header and CRC
+                memcpy(data->rx_msg.data, &data->buffer[2], data->rx_msg.len);
+                data->rx_msg_valid = true;
+                if (!ucpd_ch32_is_good_crc(data->rx_msg.header) &&
+                    (data->rx_msg.type == PD_PACKET_SOP || data->rx_sop_prime)) {
+                    if (k_sem_take(&data->tx_lock, K_NO_WAIT)) {
+                        LOG_ERR("transmit in progress, dropping GoodCRC"); // shouldn't happen
+                    } else {
+                        union pd_header header = {
+                            .message_type           = PD_CTRL_GOOD_CRC,
+                            .port_data_role         = 0,
+                            .specification_revision = data->rx_msg.header.specification_revision,
+                            .port_power_role        = 0,
+                            .message_id             = data->rx_msg.header.message_id,
+                            .number_of_data_objects = 0,
+                            .extended               = 0,
+                        };
+                        if (data->rx_msg.type == PD_PACKET_SOP) {
+                            header.port_power_role = data->power_role;
+                            header.port_data_role  = data->data_role;
+                        }
+                        data->tx_good_crc = true;
+                        ucpd_ch32_start_tx(dev, data->rx_msg.type, header, NULL, 0);
+                    }
+                }
+                ucpd_ch32_notify_alert(dev, TCPC_ALERT_MSG_STATUS);
+                k_sem_give(&data->rx_msg_lock);
+            }
+        }
+        config->base->STATUS |= IF_RX_ACT;
+    }
+    if (status & IF_TX_END) {
+        if (!data->tx_good_crc) {
+            ucpd_ch32_notify_alert(dev, TCPC_ALERT_TRANSMIT_MSG_SUCCESS); // no way to check failure
+        }
+        ucpd_ch32_end_tx(dev);
+        ucpd_ch32_start_rx(dev);
+        k_sem_give(&data->tx_lock);
+        config->base->STATUS |= IF_TX_END;
+    }
+    if (status & IF_RX_RESET) {
+        ucpd_ch32_notify_alert(dev, TCPC_ALERT_HARD_RESET_RECEIVED);
+        config->base->STATUS |= IF_RX_RESET;
+    }
+}
+
 static int ucpd_ch32_init(const struct device *dev) {
 #if IS_ENABLED(CONFIG_SOC_CH32X035)
     if (PWR_VDD_SupplyVoltage() == PWR_VDD_5V) {
@@ -254,21 +398,37 @@ static int ucpd_ch32_init(const struct device *dev) {
 #endif
 
     const struct ucpd_ch32_config *config = dev->config;
-    struct ucpd_ch32_data *data = dev->data;
-
     config->irq_config_func();
     clock_control_on(config->clock_type, config->clock_mask);
 
-    data->rp = TC_RP_USB;
-    data->rp_enable = false;
+    return 0;
+}
 
-    // TODO init into receiving state
+static int ucpd_ch32_driver_init(const struct device *dev) {
+    const struct ucpd_ch32_config *config = dev->config;
+    struct ucpd_ch32_data *data = dev->data;
+
+    k_sem_init(&data->tx_lock, 1, 1);
+    k_sem_init(&data->rx_msg_lock, 1, 1);
+
+    data->rp           = TC_RP_USB;
+    data->rp_enable    = false;
+    data->rx_sop_prime = false;
+    data->power_role   = TC_ROLE_SINK;
+    data->data_role    = TC_ROLE_UFP;
+
+    config->base->STATUS = 0xFC; // clear interrupts
+    config->base->CONFIG = PD_ALL_CLR;
+    config->base->CONFIG = 0;
+    config->base->DMA    = (uint32_t) data->buffer;
+    config->base->CONFIG = IE_TX_END | IE_RX_RESET | IE_RX_ACT | PD_DMA_EN;
+    ucpd_ch32_start_rx(dev);
 
     return 0;
 }
 
 static const struct tcpc_driver_api ucpd_ch32_driver_api = {
-    .init                   = ucpd_ch32_init, // called twice
+    .init                   = ucpd_ch32_driver_init,
     .set_alert_handler_cb   = ucpd_ch32_set_alert_handler_cb,
     .get_cc                 = ucpd_ch32_get_cc,
     .set_rx_enable          = NULL,
@@ -286,7 +446,7 @@ static const struct tcpc_driver_api ucpd_ch32_driver_api = {
     .set_cc_polarity        = ucpd_ch32_set_cc_polarity,
     .dump_std_reg           = NULL,
     .set_bist_test_mode     = NULL,
-    .sop_prime_enable       = NULL,
+    .sop_prime_enable       = ucpd_ch32_sop_prime_enable,
 };
 
 #define UCPD_CH32_INIT(n)                                           \

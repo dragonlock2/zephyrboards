@@ -9,6 +9,7 @@
 #include <ch32x035_pwr.h>
 #include <ch32x035_rcc.h>
 #include <ch32x035_usart.h>
+#include <ch32x035_usbpd.h>
 
 // bug with an extra extern "C"...
 #ifndef __CH32X035_USB_H
