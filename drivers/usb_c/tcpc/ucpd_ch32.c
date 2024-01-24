@@ -311,6 +311,7 @@ static int ucpd_ch32_set_cc_polarity(const struct device *dev, enum tc_cc_polari
     } else { // TC_POLARITY_CC2
         config->base->CONFIG = config->base->CONFIG | CC_SEL;
     }
+    ucpd_ch32_start_rx(dev); // don't start receive until after polarity set
     return 0;
 }
 
@@ -449,7 +450,6 @@ static int ucpd_ch32_driver_init(const struct device *dev) {
     config->base->CONFIG = 0;
     config->base->DMA    = (uint32_t) data->buffer;
     config->base->CONFIG = IE_TX_END | IE_RX_RESET | IE_RX_ACT | PD_DMA_EN;
-    ucpd_ch32_start_rx(dev);
 
     return 0;
 }
