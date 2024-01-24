@@ -29,6 +29,7 @@ struct ucpd_ch32_data {
     __attribute__((aligned(4))) uint8_t buffer[512];
     struct k_sem tx_lock;
     bool tx_good_crc;
+    bool tx_valid;
     struct k_sem rx_msg_lock;
     struct pd_msg rx_msg;
     bool rx_msg_valid;
@@ -93,6 +94,7 @@ static void ucpd_ch32_start_tx(const struct device *dev, enum pd_packet_type typ
     data->buffer[0] = (header.raw_value >> 0) & 0xFF;
     data->buffer[1] = (header.raw_value >> 8) & 0xFF;
     memcpy(&data->buffer[2], buffer, len);
+    data->tx_valid = true;
 
     // send packet
     if (data->polarity == TC_POLARITY_CC1) {
@@ -226,7 +228,6 @@ static int ucpd_ch32_transmit_data(const struct device *dev, struct pd_msg *msg)
         ucpd_ch32_start_tx(dev, msg->type, msg->header, msg->data, msg->len);
         return 0;
     }
-    return 0;
 }
 
 static int ucpd_ch32_select_rp_value(const struct device *dev, enum tc_rp_value rp) {
@@ -335,7 +336,6 @@ static void ucpd_ch32_isr(const struct device *dev) {
                 data->rx_msg.header.raw_value = (data->buffer[1] << 8) | data->buffer[0];
                 data->rx_msg.len = byte_count - 2 - 4; // remove header and CRC
                 memcpy(data->rx_msg.data, &data->buffer[2], data->rx_msg.len);
-                data->rx_msg_valid = true;
                 if (!ucpd_ch32_is_good_crc(data->rx_msg.header) &&
                     (data->rx_msg.type == PD_PACKET_SOP || data->rx_sop_prime)) {
                     if (k_sem_take(&data->tx_lock, K_NO_WAIT)) {
@@ -357,20 +357,30 @@ static void ucpd_ch32_isr(const struct device *dev) {
                         data->tx_good_crc = true;
                         ucpd_ch32_start_tx(dev, data->rx_msg.type, header, NULL, 0);
                     }
+                    // hold lock until GoodCRC sent
+                } else {
+                    if (data->tx_valid && ucpd_ch32_is_good_crc(data->rx_msg.header)) {
+                        data->tx_valid = false;
+                        k_sem_give(&data->tx_lock);
+                        ucpd_ch32_notify_alert(dev, TCPC_ALERT_TRANSMIT_MSG_SUCCESS); // TODO add timeouts and retries
+                    }
+                    k_sem_give(&data->rx_msg_lock);
+                    // message doesn't need GoodCRC, don't notify stack
                 }
-                ucpd_ch32_notify_alert(dev, TCPC_ALERT_MSG_STATUS);
-                k_sem_give(&data->rx_msg_lock);
             }
         }
         config->base->STATUS |= IF_RX_ACT;
     }
     if (status & IF_TX_END) {
-        if (!data->tx_good_crc) {
-            ucpd_ch32_notify_alert(dev, TCPC_ALERT_TRANSMIT_MSG_SUCCESS); // no way to check failure
-        }
         ucpd_ch32_end_tx(dev);
         ucpd_ch32_start_rx(dev);
-        k_sem_give(&data->tx_lock);
+        if (data->tx_good_crc) {
+            data->tx_valid = false;
+            data->rx_msg_valid = true;
+            k_sem_give(&data->tx_lock);
+            k_sem_give(&data->rx_msg_lock);
+            ucpd_ch32_notify_alert(dev, TCPC_ALERT_MSG_STATUS);
+        }
         config->base->STATUS |= IF_TX_END;
     }
     if (status & IF_RX_RESET) {
@@ -416,6 +426,7 @@ static int ucpd_ch32_driver_init(const struct device *dev) {
     data->rx_sop_prime = false;
     data->power_role   = TC_ROLE_SINK;
     data->data_role    = TC_ROLE_UFP;
+    data->tx_valid     = false;
 
     config->base->STATUS = 0xFC; // clear interrupts
     config->base->CONFIG = PD_ALL_CLR;
