@@ -29,6 +29,7 @@ struct ucpd_ch32_data {
     __attribute__((aligned(4))) uint8_t buffer[512];
     struct k_sem tx_lock;
     bool tx_good_crc;
+    bool tx_need_crc;
     bool tx_valid;
     struct k_sem rx_msg_lock;
     struct pd_msg rx_msg;
@@ -80,13 +81,14 @@ static void ucpd_ch32_start_tx(const struct device *dev, enum pd_packet_type typ
     // setup packet
     len = MIN(len, sizeof(data->buffer) - 2);
     switch (type) {
-        case PD_PACKET_SOP:           config->base->TX_SEL = UPD_SOP0;        break;
-        case PD_PACKET_SOP_PRIME:     config->base->TX_SEL = UPD_SOP1;        break;
-        case PD_PACKET_PRIME_PRIME:   config->base->TX_SEL = UPD_SOP2;        break;
-        case PD_PACKET_TX_HARD_RESET: config->base->TX_SEL = UPD_HARD_RESET;  break;
-        case PD_PACKET_CABLE_RESET:   config->base->TX_SEL = UPD_CABLE_RESET; break;
+        case PD_PACKET_SOP:           config->base->TX_SEL = UPD_SOP0;        data->tx_need_crc = true;  break;
+        case PD_PACKET_SOP_PRIME:     config->base->TX_SEL = UPD_SOP1;        data->tx_need_crc = true;  break;
+        case PD_PACKET_PRIME_PRIME:   config->base->TX_SEL = UPD_SOP2;        data->tx_need_crc = true;  break;
+        case PD_PACKET_TX_HARD_RESET: config->base->TX_SEL = UPD_HARD_RESET;  data->tx_need_crc = false; break;
+        case PD_PACKET_CABLE_RESET:   config->base->TX_SEL = UPD_CABLE_RESET; data->tx_need_crc = false; break;
         default:
             LOG_WRN("unsupported packet type %d, default to SOP", type);
+            data->tx_need_crc = true;
             config->base->TX_SEL = UPD_SOP0;
             break;
     }
@@ -200,6 +202,9 @@ static int ucpd_ch32_get_cc(const struct device *dev,
                 break;
             }
         }
+
+        // need to reset comparator for reliable receiving
+        *ccs[i].reg = (*ccs[i].reg & ~CC_CMP_Mask) | CC_CMP_66;
     }
     return 0;
 }
@@ -325,8 +330,13 @@ static void ucpd_ch32_isr(const struct device *dev) {
             LOG_ERR("invalid packet length");
         } else {
             if (k_sem_take(&data->rx_msg_lock, K_NO_WAIT)) {
+                ucpd_ch32_notify_alert(dev, TCPC_ALERT_RX_BUFFER_OVERFLOW);
                 LOG_ERR("message overrun, dropping new packet");
             } else {
+                if (data->rx_msg_valid) {
+                    ucpd_ch32_notify_alert(dev, TCPC_ALERT_RX_BUFFER_OVERFLOW);
+                    LOG_ERR("message overrun, replacing old packet");
+                }
                 switch (status & MASK_PD_STAT) {
                     case PD_RX_SOP0:      data->rx_msg.type = PD_PACKET_SOP;         break;
                     case PD_RX_SOP1_HRST: data->rx_msg.type = PD_PACKET_SOP_PRIME;   break;
@@ -364,8 +374,10 @@ static void ucpd_ch32_isr(const struct device *dev) {
                         k_sem_give(&data->tx_lock);
                         ucpd_ch32_notify_alert(dev, TCPC_ALERT_TRANSMIT_MSG_SUCCESS); // TODO add timeouts and retries
                     }
+                    data->rx_msg_valid = true;
                     k_sem_give(&data->rx_msg_lock);
-                    // message doesn't need GoodCRC, don't notify stack
+                    ucpd_ch32_notify_alert(dev, TCPC_ALERT_MSG_STATUS);
+                    // no GoodCRC needed, send to stack immediately
                 }
             }
         }
@@ -380,6 +392,10 @@ static void ucpd_ch32_isr(const struct device *dev) {
             k_sem_give(&data->tx_lock);
             k_sem_give(&data->rx_msg_lock);
             ucpd_ch32_notify_alert(dev, TCPC_ALERT_MSG_STATUS);
+        } else if (!data->tx_need_crc) {
+            data->tx_valid = false;
+            k_sem_give(&data->tx_lock);
+            ucpd_ch32_notify_alert(dev, TCPC_ALERT_TRANSMIT_MSG_SUCCESS);
         }
         config->base->STATUS |= IF_TX_END;
     }
