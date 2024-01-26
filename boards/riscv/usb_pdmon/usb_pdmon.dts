@@ -40,8 +40,13 @@
             tcpc = <&usbpd>;
             vbus = <&vbus1>;
             power-role = "sink";
-            sink-pdos = <PDO_FIXED(5000, 100, 0)>; // app can override
-        };
+            sink-pdos = <
+                PDO_FIXED(5000,  3000, 0) /* 5V,  3A */
+                PDO_FIXED(9000,  3000, 0) /* 9V,  3A */
+                PDO_FIXED(15000, 3000, 0) /* 15V, 3A */
+                PDO_FIXED(20000, 5000, 0) /* 20V, 3A */
+            >;
+        }; // Apple will toggle power if requesting PDO not in sink PDOs
     };
 };
 
