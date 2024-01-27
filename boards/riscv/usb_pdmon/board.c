@@ -39,11 +39,13 @@ static struct {
     const struct device *tcpc;
     const struct device *vbus;
     struct pd_msg tx_msg, rx_msg;
+    enum pd_rev_type pd_rev;
     uint8_t msg_id;
     uint32_t caps[PDO_MAX_DATA_OBJECTS];
     int num_caps;
     bool rejected, ps_ready;
-    usb_pdmon_req_t req;
+    usb_pdmon_req_t req, actual;
+    struct k_sem actual_lock;
 } data;
 
 // private helpers
@@ -106,20 +108,13 @@ static void usb_pdmon_send(void) {
     }
 }
 
-static void usb_pdmon_send_rdo(void) {
-    data.tx_msg.type = PD_PACKET_SOP;
-    data.tx_msg.header.message_type = PD_DATA_REQUEST;
-    data.tx_msg.header.number_of_data_objects = 1;
-    *(uint32_t*) &data.tx_msg.data[0] = usb_pdmon_get_rdo();
-    usb_pdmon_send();
-    data.ps_ready = false;
-}
-
 static void usb_pdmon_thread(void *, void *, void *) {
     data.tcpc = DEVICE_DT_GET(DT_NODELABEL(usbpd));
     data.vbus = DEVICE_DT_GET(DT_NODELABEL(vbus1));
     data.req.mV = 5000;
-    data.req.mA = 100;
+    data.req.mA = 3000;
+    data.pd_rev = PD_REV30;
+    k_sem_init(&data.actual_lock, 1, 1);
 
     usbc_vbus_enable(data.vbus, true);
     tcpc_init(data.tcpc);
@@ -147,9 +142,14 @@ static void usb_pdmon_thread(void *, void *, void *) {
     while (true) {
         enum tc_cc_voltage_state cc1, cc2;
         tcpc_get_cc(data.tcpc, &cc1, &cc2);
-        if (cc1 == TC_CC_VOLT_RP_3A0 || cc2 == TC_CC_VOLT_RP_3A0) { // SinkTxOk
+        if ((data.pd_rev <= PD_REV20) || // non-zero risk of collision
+            (cc1 == TC_CC_VOLT_RP_3A0 || cc2 == TC_CC_VOLT_RP_3A0)) { // SinkTxOk added in PD 3.0
             if (data.ps_ready && k_msgq_num_used_get(&usb_pdmon_msgq) != 0) {
-                usb_pdmon_send_rdo();
+                data.tx_msg.type = PD_PACKET_SOP;
+                data.tx_msg.header.message_type = PD_CTRL_GET_SOURCE_CAP;
+                data.tx_msg.header.number_of_data_objects = 0;
+                usb_pdmon_send();
+                data.ps_ready = false;
             }
         }
         if (tcpc_receive_data(data.tcpc, &data.rx_msg) >= 0 && data.rx_msg.type == PD_PACKET_SOP) {
@@ -169,6 +169,12 @@ static void usb_pdmon_thread(void *, void *, void *) {
                         LOG_INF("ps ready");
                         data.rejected = false;
                         data.ps_ready = true;
+                        if (k_sem_take(&data.actual_lock, K_MSEC(100))) {
+                            LOG_ERR("unable to grab actual lock for writing, dropping");
+                        } else {
+                            data.actual = data.req;
+                            k_sem_give(&data.actual_lock);
+                        }
                         break;
 
                     case PD_CTRL_GOOD_CRC:
@@ -182,6 +188,7 @@ static void usb_pdmon_thread(void *, void *, void *) {
             } else {
                 switch (data.rx_msg.header.message_type) {
                     case PD_DATA_SOURCE_CAP: {
+                        data.pd_rev = data.rx_msg.header.specification_revision;
                         data.num_caps = MIN(data.rx_msg.header.number_of_data_objects, PDO_MAX_DATA_OBJECTS);
                         for (size_t i = 0; i < data.num_caps; i++) {
                             uint32_t *caps = (uint32_t*) data.rx_msg.data; // works bc little-endian!
@@ -195,7 +202,12 @@ static void usb_pdmon_thread(void *, void *, void *) {
                                 );
                             }
                         }
-                        usb_pdmon_send_rdo();
+                        data.tx_msg.type = PD_PACKET_SOP;
+                        data.tx_msg.header.message_type = PD_DATA_REQUEST;
+                        data.tx_msg.header.number_of_data_objects = 1;
+                        *(uint32_t*) &data.tx_msg.data[0] = usb_pdmon_get_rdo();
+                        usb_pdmon_send();
+                        data.ps_ready = false;
                         break;
                     }
 
@@ -214,6 +226,18 @@ static void usb_pdmon_thread(void *, void *, void *) {
 bool usb_pdmon_request(uint16_t mV, uint16_t mA) {
     usb_pdmon_req_t req = { .mV = mV, .mA = mA, };
     return k_msgq_put(&usb_pdmon_msgq, &req, K_NO_WAIT) == 0;
+}
+
+bool usb_pdmon_read(uint16_t *mV, uint16_t *mA) {
+    if (k_sem_take(&data.actual_lock, K_MSEC(100))) {
+        LOG_ERR("unable to grab actual lock for reading");
+        return false;
+    } else {
+        *mV = data.actual.mV;
+        *mA = data.actual.mA;
+        k_sem_give(&data.actual_lock);
+        return true;
+    }
 }
 
 #endif // CONFIG_USBC_STACK
