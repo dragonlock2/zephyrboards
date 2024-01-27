@@ -7,12 +7,14 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(usb_pdmon, CONFIG_USBC_LOG_LEVEL);
 
+#ifndef CONFIG_USBC_STACK
+
 /*
  * Zephyr USB PD stack works well, but trying to change the PDO at runtime
  * using usbc_request(port, REQUEST_PE_GET_SRC_CAPS) keeps causing some kind
- * of corruption that eventually leads the host to power cycle the board.
- * For now, we'll just build our own very basic sink stack that'll probably
- * break on some devices.
+ * of corruption (might be retries or collisions tbh) that eventually leads
+ * the host to power cycle the board. For now, we'll just build our own very
+ * basic sink stack that'll probably break on some devices.
  */
 
 // private defines
@@ -34,14 +36,14 @@ static struct {
     uint8_t msg_id;
     uint32_t caps[PDO_MAX_DATA_OBJECTS];
     size_t num_caps;
-    bool rejected;
+    bool rejected, ps_ready;
 } data;
 
 // private helpers
 static void usb_pdmon_alert_handler(const struct device *, void *, enum tcpc_alert alert) {
     switch (alert) {
         case TCPC_ALERT_MSG_STATUS:
-            k_thread_resume(usb_pdmon_tid);
+            k_wakeup(usb_pdmon_tid);
             break;
 
         case TCPC_ALERT_TRANSMIT_MSG_SUCCESS:
@@ -56,7 +58,11 @@ static void usb_pdmon_alert_handler(const struct device *, void *, enum tcpc_ale
 static uint32_t usb_pdmon_get_rdo(void) {
     // TODO base on request, else safe default
     for (size_t i = 0; i < data.num_caps; i++) {
-        LOG_WRN("pdo%d 0x%x", i + 1, data.caps[i]);
+        union pd_fixed_supply_pdo_source pdo = { .raw_value = data.caps[i] };
+        LOG_ERR("pdo%d %dmV %dmA", i + 1,
+            PD_CONVERT_FIXED_PDO_VOLTAGE_TO_MV(pdo.voltage),
+            PD_CONVERT_FIXED_PDO_CURRENT_TO_MA(pdo.max_current)
+        ); // this assumes it's fixed pdo, do check type :P
     }
     union pd_rdo rdo;
     rdo.fixed.min_or_max_operating_current = PD_CONVERT_MA_TO_FIXED_PDO_CURRENT(100);
@@ -82,10 +88,21 @@ static void usb_pdmon_send(void) {
     }
 }
 
+static void usb_pdmon_send_rdo(void) {
+    data.tx_msg.type = PD_PACKET_SOP;
+    data.tx_msg.header.message_type = PD_DATA_REQUEST;
+    data.tx_msg.header.number_of_data_objects = 1;
+    *(uint32_t*) &data.tx_msg.data[0] = usb_pdmon_get_rdo();
+    usb_pdmon_send();
+    data.ps_ready = false;
+}
+
 static void usb_pdmon_thread(void *, void *, void *) {
     data.tcpc = DEVICE_DT_GET(DT_NODELABEL(usbpd));
     data.vbus = DEVICE_DT_GET(DT_NODELABEL(vbus1));
     data.msg_id = 0;
+    data.rejected = false;
+    data.ps_ready = false;
 
     usbc_vbus_enable(data.vbus, true);
     tcpc_init(data.tcpc);
@@ -107,10 +124,15 @@ static void usb_pdmon_thread(void *, void *, void *) {
             tcpc_set_cc_polarity(data.tcpc, TC_POLARITY_CC2);
             connected = true;
         }
-        k_msleep(25);
+        k_msleep(100);
     }
 
     while (true) {
+        enum tc_cc_voltage_state cc1, cc2;
+        tcpc_get_cc(data.tcpc, &cc1, &cc2);
+        if (cc1 == TC_CC_VOLT_RP_3A0 || cc2 == TC_CC_VOLT_RP_3A0) { // SinkTxOk
+            // TODO can change PDO here!
+        }
         if (tcpc_receive_data(data.tcpc, &data.rx_msg) >= 0 && data.rx_msg.type == PD_PACKET_SOP) {
             if (data.rx_msg.len == 0) {
                 switch (data.rx_msg.header.message_type) {
@@ -119,15 +141,22 @@ static void usb_pdmon_thread(void *, void *, void *) {
                         break;
 
                     case PD_CTRL_REJECT:
+                        LOG_WRN("rdo rejected");
                         data.rejected = true;
-                        LOG_WRN("rdo rejected"); // TODO send another request
+                        data.ps_ready = true; // host may or may not request again
                         break;
 
                     case PD_CTRL_PS_RDY:
                         LOG_INF("ps ready");
+                        data.ps_ready = true;
+                        break;
+
+                    case PD_CTRL_GOOD_CRC:
+                        // ignore
                         break;
 
                     default:
+                        LOG_WRN("ctrl msg %d ignored", data.rx_msg.header.message_type);
                         break;
                 }
             } else {
@@ -138,19 +167,19 @@ static void usb_pdmon_thread(void *, void *, void *) {
                             uint32_t *caps = (uint32_t*) data.rx_msg.data; // works bc little-endian!
                             data.caps[i] = caps[i];
                         }
-                        data.tx_msg.type = PD_PACKET_SOP;
-                        data.tx_msg.header.message_type = PD_DATA_REQUEST;
-                        data.tx_msg.header.number_of_data_objects = 1;
-                        *(uint32_t*) &data.tx_msg.data[0] = usb_pdmon_get_rdo();
-                        usb_pdmon_send();
+                        usb_pdmon_send_rdo();
                         break;
                     }
 
                     default:
+                        LOG_WRN("data msg %d w/ %d obj ignored", data.rx_msg.header.message_type,
+                            data.rx_msg.header.number_of_data_objects);
                         break;
                 }
             }
         }
-        k_thread_suspend(usb_pdmon_tid);
+        k_msleep(100);
     }
 }
+
+#endif // CONFIG_USBC_STACK
