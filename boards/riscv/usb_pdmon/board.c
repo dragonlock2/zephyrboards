@@ -240,4 +240,48 @@ bool usb_pdmon_read(uint16_t *mV, uint16_t *mA) {
     }
 }
 
+#if __has_include("jabi/error.h")
+#include <jabi/error.h>
+
+int16_t jabi_metadata_custom(uint16_t idx, uint8_t *req, uint16_t req_len,
+        uint8_t *resp, uint16_t *resp_len) {
+    if (req_len == 0) {
+        return JABI_INVALID_ARGS_ERR;
+    }
+    switch (req[0]) {
+        case 0: {
+            if (req_len != 5) {
+                return JABI_INVALID_ARGS_ERR;
+            }
+            uint16_t mV = (req[1] << 8) | req[2]; // big-endian
+            uint16_t mA = (req[3] << 8) | req[4];
+            return usb_pdmon_request(mV, mA) ? 0 : JABI_PERIPHERAL_ERR;
+            break;
+        }
+
+        case 1: {
+            if (req_len != 1) {
+                return JABI_INVALID_ARGS_ERR;
+            }
+            uint16_t mV, mA;
+            if (usb_pdmon_read(&mV, &mA)) {
+                resp[0] = (mV >> 8) & 0xFF;
+                resp[1] = (mV >> 0) & 0xFF;
+                resp[2] = (mA >> 8) & 0xFF;
+                resp[3] = (mA >> 0) & 0xFF;
+                *resp_len = 4;
+                return 0;
+            }
+            return JABI_INVALID_ARGS_ERR;
+            break;
+        }
+
+        default:
+            return JABI_INVALID_ARGS_ERR;
+            break;
+    }
+}
+
+#endif // __has_include("jabi/error.h")
+
 #endif // CONFIG_USBC_STACK
