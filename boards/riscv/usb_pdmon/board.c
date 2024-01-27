@@ -22,6 +22,10 @@ LOG_MODULE_REGISTER(usb_pdmon, CONFIG_USBC_LOG_LEVEL);
 
 static void usb_pdmon_thread(void *, void *, void *);
 
+typedef struct {
+    uint32_t mV, mA;
+} usb_pdmon_req_t;
+
 // private data
 K_THREAD_DEFINE(
     usb_pdmon_tid, USB_PDMON_STACK_SIZE,
@@ -29,14 +33,17 @@ K_THREAD_DEFINE(
     K_PRIO_COOP(1), 0, 0
 );
 
+K_MSGQ_DEFINE(usb_pdmon_msgq, sizeof(usb_pdmon_req_t), 1, 4);
+
 static struct {
     const struct device *tcpc;
     const struct device *vbus;
     struct pd_msg tx_msg, rx_msg;
     uint8_t msg_id;
     uint32_t caps[PDO_MAX_DATA_OBJECTS];
-    size_t num_caps;
+    int num_caps;
     bool rejected, ps_ready;
+    usb_pdmon_req_t req;
 } data;
 
 // private helpers
@@ -56,23 +63,34 @@ static void usb_pdmon_alert_handler(const struct device *, void *, enum tcpc_ale
 }
 
 static uint32_t usb_pdmon_get_rdo(void) {
-    // TODO base on request, else safe default
-    for (size_t i = 0; i < data.num_caps; i++) {
-        union pd_fixed_supply_pdo_source pdo = { .raw_value = data.caps[i] };
-        LOG_ERR("pdo%d %dmV %dmA", i + 1,
-            PD_CONVERT_FIXED_PDO_VOLTAGE_TO_MV(pdo.voltage),
-            PD_CONVERT_FIXED_PDO_CURRENT_TO_MA(pdo.max_current)
-        ); // this assumes it's fixed pdo, do check type :P
+    // TODO PPS, EPR, AVS support
+    k_msgq_get(&usb_pdmon_msgq, &data.req, K_NO_WAIT);
+    int idx;
+    for (idx = data.num_caps - 1; idx >= 0; idx--) {
+        // finds highest voltage less than or equal to requested
+        union pd_fixed_supply_pdo_source pdo = { .raw_value = data.caps[idx] };
+        if (pdo.type == PDO_FIXED && PD_CONVERT_FIXED_PDO_VOLTAGE_TO_MV(pdo.voltage) <= data.req.mV) {
+            data.req.mV = PD_CONVERT_FIXED_PDO_VOLTAGE_TO_MV(pdo.voltage);
+            data.req.mA = MIN(data.req.mA, PD_CONVERT_FIXED_PDO_CURRENT_TO_MA(pdo.max_current));
+            break;
+        }
     }
+    if (data.rejected || (idx < 0)) {
+        data.req.mV = 5000;
+        data.req.mA = 100;
+        idx = 0;
+    }
+    LOG_INF("request %dmV %dmA on pdo%d", data.req.mV, data.req.mA, idx);
+
     union pd_rdo rdo;
-    rdo.fixed.min_or_max_operating_current = PD_CONVERT_MA_TO_FIXED_PDO_CURRENT(100);
-    rdo.fixed.operating_current = PD_CONVERT_MA_TO_FIXED_PDO_CURRENT(100);
+    rdo.fixed.min_or_max_operating_current = PD_CONVERT_MA_TO_FIXED_PDO_CURRENT(data.req.mA);
+    rdo.fixed.operating_current = PD_CONVERT_MA_TO_FIXED_PDO_CURRENT(data.req.mA);
     rdo.fixed.unchunked_ext_msg_supported = 0;
     rdo.fixed.no_usb_suspend = 1;
     rdo.fixed.usb_comm_capable = 0;
     rdo.fixed.cap_mismatch = 0;
     rdo.fixed.giveback = 0;
-    rdo.fixed.object_pos = 1; // chooses pdo
+    rdo.fixed.object_pos = idx + 1; // 1-indexed
     return rdo.raw_value;
 }
 
@@ -100,9 +118,8 @@ static void usb_pdmon_send_rdo(void) {
 static void usb_pdmon_thread(void *, void *, void *) {
     data.tcpc = DEVICE_DT_GET(DT_NODELABEL(usbpd));
     data.vbus = DEVICE_DT_GET(DT_NODELABEL(vbus1));
-    data.msg_id = 0;
-    data.rejected = false;
-    data.ps_ready = false;
+    data.req.mV = 5000;
+    data.req.mA = 100;
 
     usbc_vbus_enable(data.vbus, true);
     tcpc_init(data.tcpc);
@@ -131,7 +148,9 @@ static void usb_pdmon_thread(void *, void *, void *) {
         enum tc_cc_voltage_state cc1, cc2;
         tcpc_get_cc(data.tcpc, &cc1, &cc2);
         if (cc1 == TC_CC_VOLT_RP_3A0 || cc2 == TC_CC_VOLT_RP_3A0) { // SinkTxOk
-            // TODO can change PDO here!
+            if (data.ps_ready && k_msgq_num_used_get(&usb_pdmon_msgq) != 0) {
+                usb_pdmon_send_rdo();
+            }
         }
         if (tcpc_receive_data(data.tcpc, &data.rx_msg) >= 0 && data.rx_msg.type == PD_PACKET_SOP) {
             if (data.rx_msg.len == 0) {
@@ -140,14 +159,15 @@ static void usb_pdmon_thread(void *, void *, void *) {
                         LOG_INF("rdo accepted");
                         break;
 
-                    case PD_CTRL_REJECT:
+                    case PD_CTRL_REJECT: // host may or may not request again
                         LOG_WRN("rdo rejected");
                         data.rejected = true;
-                        data.ps_ready = true; // host may or may not request again
+                        data.ps_ready = true;
                         break;
 
                     case PD_CTRL_PS_RDY:
                         LOG_INF("ps ready");
+                        data.rejected = false;
                         data.ps_ready = true;
                         break;
 
@@ -166,6 +186,14 @@ static void usb_pdmon_thread(void *, void *, void *) {
                         for (size_t i = 0; i < data.num_caps; i++) {
                             uint32_t *caps = (uint32_t*) data.rx_msg.data; // works bc little-endian!
                             data.caps[i] = caps[i];
+
+                            union pd_fixed_supply_pdo_source pdo = { .raw_value = caps[i] };
+                            if (pdo.type == PDO_FIXED) {
+                                LOG_WRN("fixed pdo%d %dmV %dmA", i,
+                                    PD_CONVERT_FIXED_PDO_VOLTAGE_TO_MV(pdo.voltage),
+                                    PD_CONVERT_FIXED_PDO_CURRENT_TO_MA(pdo.max_current)
+                                );
+                            }
                         }
                         usb_pdmon_send_rdo();
                         break;
@@ -180,6 +208,12 @@ static void usb_pdmon_thread(void *, void *, void *) {
         }
         k_msleep(100);
     }
+}
+
+// public functions
+bool usb_pdmon_request(uint16_t mV, uint16_t mA) {
+    usb_pdmon_req_t req = { .mV = mV, .mA = mA, };
+    return k_msgq_put(&usb_pdmon_msgq, &req, K_NO_WAIT) == 0;
 }
 
 #endif // CONFIG_USBC_STACK
