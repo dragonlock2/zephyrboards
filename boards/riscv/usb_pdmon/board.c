@@ -89,7 +89,7 @@ static uint32_t usb_pdmon_get_rdo(void) {
     rdo.fixed.operating_current = PD_CONVERT_MA_TO_FIXED_PDO_CURRENT(data.req.mA);
     rdo.fixed.unchunked_ext_msg_supported = 0;
     rdo.fixed.no_usb_suspend = 1;
-    rdo.fixed.usb_comm_capable = 0;
+    rdo.fixed.usb_comm_capable = 1;
     rdo.fixed.cap_mismatch = 0;
     rdo.fixed.giveback = 0;
     rdo.fixed.object_pos = idx + 1; // 1-indexed
