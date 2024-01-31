@@ -48,6 +48,7 @@ static struct {
         uint8_t ep4_out[64];
         uint8_t ep4_in[64];
     } ep_buffer;
+    uint8_t ep0_rx[64];
 } dev_data;
 
 struct cb_msg {
@@ -116,6 +117,10 @@ static void usb_dc_ch32_usbfs_isr(const struct device *dev) {
         switch (token) {
             case 0b00: // OUT
                 *EP_CTRL(ep) = (*EP_CTRL(ep) & ~USBFS_UEP_R_RES_MASK) | USBFS_UEP_R_RES_NAK;
+                if (ep == 0) {
+                    // some drivers send next packet before requesting our response
+                    memcpy(dev_data.ep0_rx, dev_data.ep_buffer.ep0, 64);
+                }
                 dev_data.ep_state[ep][USB_OUT_IDX].rx_len = USBFSD->RX_LEN;
                 dev_data.ep_state[ep][USB_OUT_IDX].rx_idx = 0;
                 msg.ep = ep | USB_EP_DIR_OUT;
@@ -140,7 +145,9 @@ static void usb_dc_ch32_usbfs_isr(const struct device *dev) {
                 break;
 
             case 0b11: // SETUP
-                *EP_CTRL(0) = (*EP_CTRL(0) & ~USBFS_UEP_R_RES_MASK) | USBFS_UEP_R_RES_NAK;
+                *EP_CTRL(0) = (*EP_CTRL(0) & ~(USBFS_UEP_T_RES_MASK | USBFS_UEP_R_RES_MASK)) |
+                    USBFS_UEP_T_RES_NAK | USBFS_UEP_R_RES_NAK; // clear stalls too in case host requests too fast
+                memcpy(dev_data.ep0_rx, dev_data.ep_buffer.ep0, 64); // note see OUT comment
                 dev_data.ep0_tog = true;
                 dev_data.setup_available = true;
                 msg.ep = USB_CONTROL_EP_OUT;
@@ -364,12 +371,14 @@ int usb_dc_ep_read_wait(uint8_t ep, uint8_t *data,
 
     read_cnt = MIN(read_cnt, max_data_len);
     if (ep_idx == 0 && dev_data.setup_available) {
-        dev_data.setup_available = false;
-        memcpy(data, dev_data.ep_buffer.ep0, read_cnt);
+        if (read_cnt != 0) { // only consume if actually used
+            dev_data.setup_available = false;
+        }
+        memcpy(data, dev_data.ep0_rx, read_cnt);
     } else {
         uint8_t rx_idx = dev_data.ep_state[ep_idx][USB_OUT_IDX].rx_idx;
         if (ep_idx == 0) {
-            memcpy(data, dev_data.ep_buffer.ep0 + rx_idx, read_cnt);
+            memcpy(data, dev_data.ep0_rx + rx_idx, read_cnt);
         } else if (ep_idx == 4) {
             memcpy(data, dev_data.ep_buffer.ep4_out + rx_idx, read_cnt);
         } else {
@@ -377,7 +386,9 @@ int usb_dc_ep_read_wait(uint8_t ep, uint8_t *data,
         }
         dev_data.ep_state[ep_idx][USB_OUT_IDX].rx_idx += read_cnt;
     }
-    *read_bytes = read_cnt;
+    if (read_bytes) {
+        *read_bytes = read_cnt;
+    }
     return 0;
 }
 
@@ -393,7 +404,7 @@ int usb_dc_ep_read_continue(const uint8_t ep) {
 int usb_dc_ep_read(const uint8_t ep, uint8_t *const data,
         const uint32_t max_data_len, uint32_t *const read_bytes) {
     int ret = usb_dc_ep_read_wait(ep, data, max_data_len, read_bytes);
-    if (ret >= 0) {
+    if (ret == 0) { // if >0, buffer not empty
         ret = usb_dc_ep_read_continue(ep);
     }
     return ret;
