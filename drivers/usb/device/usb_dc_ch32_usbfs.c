@@ -5,6 +5,7 @@
 #include <zephyr/device.h>
 #include <zephyr/irq.h>
 #include <zephyr/usb/usb_device.h>
+#include <soc.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(usb_dc_ch32_usbfs, CONFIG_USB_DRIVER_LOG_LEVEL);

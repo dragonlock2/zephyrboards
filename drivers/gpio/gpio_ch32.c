@@ -5,6 +5,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/gpio/gpio_utils.h>
 #include <zephyr/irq.h>
+#include <soc.h>
 
 struct gpio_ch32_config {
     GPIO_TypeDef *base;

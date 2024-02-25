@@ -5,6 +5,7 @@
 #include <zephyr/device.h>
 #include <zephyr/irq.h>
 #include <zephyr/drivers/usb_c/usbc_tcpc.h>
+#include <soc.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(ucpd_ch32, CONFIG_USBC_LOG_LEVEL);
@@ -209,14 +210,20 @@ static int ucpd_ch32_get_cc(const struct device *dev,
     return 0;
 }
 
-static int ucpd_ch32_receive_data(const struct device *dev, struct pd_msg *msg) {
+static int ucpd_ch32_get_rx_pending_msg(const struct device *dev, struct pd_msg *msg) {
     int ret = -EIO;
     struct ucpd_ch32_data *data = dev->data;
     if (k_sem_take(&data->rx_msg_lock, K_NO_WAIT) == 0) {
         if (data->rx_msg_valid) {
-            *msg = data->rx_msg;
-            ret = data->rx_msg.len + 2; // usbc_prl.c checks > 0
-            data->rx_msg_valid = false;
+            if (msg == NULL) {
+                ret = 0;
+            } else {
+                *msg = data->rx_msg;
+                ret = data->rx_msg.len + 2; // usbc_prl.c checks > 0
+                data->rx_msg_valid = false;
+            }
+        } else {
+            ret = -ENODATA;
         }
         k_sem_give(&data->rx_msg_lock);
     }
@@ -459,8 +466,7 @@ static const struct tcpc_driver_api ucpd_ch32_driver_api = {
     .set_alert_handler_cb   = ucpd_ch32_set_alert_handler_cb,
     .get_cc                 = ucpd_ch32_get_cc,
     .set_rx_enable          = NULL,
-    .is_rx_pending_msg      = NULL,
-    .receive_data           = ucpd_ch32_receive_data,
+    .get_rx_pending_msg     = ucpd_ch32_get_rx_pending_msg,
     .transmit_data          = ucpd_ch32_transmit_data,
     .select_rp_value        = ucpd_ch32_select_rp_value,
     .get_rp_value           = ucpd_ch32_get_rp_value,

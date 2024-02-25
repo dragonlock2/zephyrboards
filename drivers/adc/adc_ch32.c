@@ -5,6 +5,7 @@
 #include <zephyr/drivers/adc.h>
 #include <zephyr/irq.h>
 #include <zephyrboards/dt-bindings/adc/ch32x035-adc.h>
+#include <soc.h>
 
 #define ADC_CHANNEL_NUM  (16)
 #define RULE_CHANNEL_NUM (16)

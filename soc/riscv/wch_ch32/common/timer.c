@@ -1,6 +1,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/timer/system_timer.h>
+#include <soc.h>
 
 // inspired by drivers/timer/riscv_machine_timer.c
 

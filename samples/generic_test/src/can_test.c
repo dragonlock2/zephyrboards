@@ -9,12 +9,8 @@ LOG_MODULE_REGISTER(can_test, CONFIG_LOG_DEFAULT_LEVEL);
 const struct can_filter filter = {
     .id    = 0,
     .mask  = 0,
-#ifdef CONFIG_CAN_FD_MODE
-    // mcan driver drops either FD or standard packets...
-    .flags = CAN_FILTER_RTR | CAN_FILTER_DATA | CAN_FILTER_FDF,
-#else
-    .flags = CAN_FILTER_RTR | CAN_FILTER_DATA,
-#endif // CONFIG_CAN_FD_MODE
+    .flags = 0, // note extended ID ignored
+    // note RTR ignored unless CONFIG_CAN_ACCEPT_RTR=y
 };
 
 static void can_test_thread(void* p1, void* p2, void* p3) {

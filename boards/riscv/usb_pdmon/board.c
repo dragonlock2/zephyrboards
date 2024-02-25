@@ -152,7 +152,7 @@ static void usb_pdmon_thread(void *, void *, void *) {
                 data.ps_ready = false;
             }
         }
-        if (tcpc_receive_data(data.tcpc, &data.rx_msg) >= 0 && data.rx_msg.type == PD_PACKET_SOP) {
+        if (tcpc_get_rx_pending_msg(data.tcpc, &data.rx_msg) >= 0 && data.rx_msg.type == PD_PACKET_SOP) {
             if (data.rx_msg.len == 0) {
                 switch (data.rx_msg.header.message_type) {
                     case PD_CTRL_ACCEPT:

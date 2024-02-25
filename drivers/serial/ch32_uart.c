@@ -4,6 +4,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/irq.h>
+#include <soc.h>
 
 struct ch32_uart_config {
     USART_TypeDef *base;

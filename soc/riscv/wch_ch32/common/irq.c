@@ -1,4 +1,5 @@
 #include <zephyr/kernel.h>
+#include <soc.h>
 
 void arch_irq_enable(unsigned int irq) {
     NVIC_EnableIRQ(irq);
@@ -10,15 +11,6 @@ void arch_irq_disable(unsigned int irq) {
 
 void __soc_handle_irq(unsigned long mcause) {
     (void) mcause; // do nothing
-}
-
-__attribute__((naked))
-bool __soc_is_irq(void) {
-    __asm__ (
-        "csrr a0, mcause \n"
-        "srli a0, a0, 31 \n"
-        "ret             \n"
-    );
 }
 
 /*

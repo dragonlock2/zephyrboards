@@ -79,7 +79,7 @@ int main() {
             printk("%f Ω\r\n", val);
         } else if (val < 1000000.0) {
             printk("%f kΩ\r\n", val / 1000.0);
-        } else if (val < INFINITY) {
+        } else if (isfinite(val)) {
             printk("%f MΩ\r\n", val / 1000000.0);
         } else {
             printk("%f Ω\r\n", val);

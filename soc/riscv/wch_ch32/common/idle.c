@@ -1,6 +1,6 @@
 #include <zephyr/kernel.h>
 
-// inspired by soc/riscv-privileged/common/idle.c
+// adapted from zephyr/arch/riscv/core/cpu_idle.c
 
 static inline void riscv_idle(unsigned int key) {
     sys_trace_idle();
