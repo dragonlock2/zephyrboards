@@ -25,7 +25,8 @@ west update
 | [jabican_usb_pro](https://matthewtran.dev/2022/12/jabican-usb-pro/) | MCUboot |
 | [stm32_esc](https://matthewtran.dev/2022/12/stm32-esc/) | |
 | [lpc845_lin](https://github.com/dragonlock2/kicadboards/tree/main/breakouts/lpc845_lin) | |
-| usb_pdmon | |
+| [usb_pdmon](https://github.com/dragonlock2/kicadboards/tree/main/breakouts/usb_pdmon) | |
+| k66f_usbhs | |
 
 ## microcontroller
 

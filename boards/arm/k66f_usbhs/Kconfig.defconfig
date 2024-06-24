@@ -1,0 +1,17 @@
+if BOARD_K66F_USBHS
+
+config BOARD
+    default "k66f_usbhs"
+
+config OSC_XTAL0_FREQ
+    default 12000000
+
+config MCG_PRDIV0
+    default 0x0
+
+config MCG_VDIV0
+    default 0xe
+
+# MCGOUTCLK = 12MHz/1*30/2 = 180MHz
+
+endif # BOARD_K66F_USBHS

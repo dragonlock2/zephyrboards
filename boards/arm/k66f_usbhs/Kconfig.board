@@ -1,0 +1,5 @@
+config BOARD_K66F_USBHS
+    bool "k66f_usbhs"
+    depends on SOC_MK66F18
+    depends on SOC_SERIES_KINETIS_K6X
+    select SOC_PART_NUMBER_MK66FN2M0VMD18

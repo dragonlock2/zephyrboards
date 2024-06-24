@@ -1,0 +1,59 @@
+/dts-v1/;
+
+#include <nxp/nxp_k6x.dtsi>
+#include "k66f_usbhs-pinctrl.dtsi"
+
+/ {
+    model = "k66f_usbhs";
+    compatible = "nxp,mk66f18", "nxp,k66f", "nxp,k6x";
+
+    chosen {
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+        zephyr,console = &uart0;
+    };
+
+    aliases {
+        led0 = &led_r;
+        led1 = &led_g;
+        led2 = &led_b;
+        sw0  = &usr_btn;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led_r: led_r { gpios = <&gpioc 1 GPIO_ACTIVE_LOW>; };
+        led_g: led_g { gpios = <&gpioc 2 GPIO_ACTIVE_LOW>; };
+        led_b: led_b { gpios = <&gpioc 3 GPIO_ACTIVE_LOW>; };
+    };
+
+    buttons {
+        compatible = "gpio-keys";
+        usr_btn: usr_btn { gpios = <&gpioc 4  (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; };
+        sd_det:  sd_det  { gpios = <&gpioa 10 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; };
+    };
+};
+
+&sim {
+    pllfll-select = <KINETIS_SIM_PLLFLLSEL_MCGPLLCLK>;
+    er32k-select = <KINETIS_SIM_ER32KSEL_RTC>;
+    core_clk    { clock-div = <1>; }; // max 180MHz
+    bus_clk     { clock-div = <3>; }; // max 60MHz
+    flexbus_clk { clock-div = <3>; }; // max 60MHz
+    flash_clk   { clock-div = <7>; }; // max 28MHz
+};
+
+&gpioa {
+    status = "okay";
+};
+
+&gpioc {
+    status = "okay";
+};
+
+&uart0 {
+    status = "okay";
+    current-speed = <115200>;
+    pinctrl-0 = <&uart0_default>;
+    pinctrl-names = "default";
+};

@@ -1,0 +1,12 @@
+#include <nxp/kinetis/MK66FN2M0VMD18-pinctrl.h>
+
+&pinctrl {
+    uart0_default: uart0_default {
+        group0 {
+            pinmux = <UART0_RX_PTA1>,
+                     <UART0_TX_PTA2>;
+            drive-strength = "low";
+            slew-rate = "fast";
+        };
+    };
+};
