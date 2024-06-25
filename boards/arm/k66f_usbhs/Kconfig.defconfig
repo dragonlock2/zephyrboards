@@ -3,6 +3,10 @@ if BOARD_K66F_USBHS
 config BOARD
     default "k66f_usbhs"
 
+config SYS_CLOCK_HW_CYCLES_PER_SEC
+    default 180000000 if K6X_HSRUN
+    default 120000000
+
 config OSC_XTAL0_FREQ
     default 12000000
 
@@ -10,8 +14,10 @@ config MCG_PRDIV0
     default 0x0
 
 config MCG_VDIV0
-    default 0xe
+    default 0xe if K6X_HSRUN
+    default 0x4
 
 # MCGOUTCLK = 12MHz/1*30/2 = 180MHz
+# MCGOUTCLK = 12MHz/1*20/2 = 120MHz
 
 endif # BOARD_K66F_USBHS

@@ -1,6 +1,6 @@
 /dts-v1/;
 
-#include <nxp/nxp_k6x.dtsi>
+#include <nxp/nxp_k66.dtsi>
 #include "k66f_usbhs-pinctrl.dtsi"
 
 / {
@@ -10,6 +10,7 @@
     chosen {
         zephyr,sram = &sram0;
         zephyr,flash = &flash0;
+        zephyr,code-partition = &slot0_partition;
         zephyr,console = &uart0;
     };
 
@@ -17,7 +18,9 @@
         led0 = &led_r;
         led1 = &led_g;
         led2 = &led_b;
-        sw0  = &usr_btn;
+        sw0 = &usr_btn;
+        mcuboot-led0 = &led_b;
+        mcuboot-button0 = &usr_btn;
     };
 
     leds {
@@ -62,6 +65,24 @@
     bus_clk     { clock-div = <3>; }; // max 60MHz
     flexbus_clk { clock-div = <3>; }; // max 60MHz
     flash_clk   { clock-div = <7>; }; // max 28MHz
+};
+
+&flash0 {
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        boot_partition: partition@0 {
+            label = "mcuboot";
+            reg = <0x00000000 0x00010000>; // 64KiB
+            read-only;
+        };
+        slot0_partition: partition@10000 {
+            label = "image-0";
+            reg = <0x00010000 0x001f0000>; // 1984KiB
+        };
+    };
 };
 
 &gpioa {
