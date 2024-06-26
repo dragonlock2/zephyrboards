@@ -44,17 +44,24 @@
     };
 
     soc {
-        usbhs: usbd@400a1000 {
+        usbhs0: usbd@400a1000 { // TODO use usbphy and udc driver added in 3.7.0
             compatible = "nxp,ehci";
             reg = <0x400a1000 0x200>;
             interrupts = <93 1>; // USBHS_IRQn
             interrupt-names = "usb_otg";
             clocks = <&usbclk>;
             num-bidir-endpoints = <8>;
-            status = "okay";
+            status = "disabled";
         };
 
-        // TODO use usbphy and udc driver added in 3.7.0
+        sdhc0: sdhc@400b1000 {
+            compatible = "nxp,mcux-sdhc";
+            reg = <0x400b1000 0x100>;
+            interrupts = <81 0>; // SDHC_IRQn
+            clocks = <&sim KINETIS_SIM_CORESYS_CLK 0x1030 17>; // kCLOCK_Sdhc0
+            max-bus-freq = <50000000>;
+            status = "disabled";
+        };
     };
 };
 
@@ -104,22 +111,17 @@
     pinctrl-names = "default";
 };
 
-zephyr_udc0: &usbhs {};
-
-&spi1 {
+zephyr_udc0: &usbhs0 {
     status = "okay";
-    pinctrl-0 = <&spi1_default>;
-    pinctrl-names = "default";
-    cs-gpios = <&gpioe 4 GPIO_ACTIVE_LOW>;
+};
 
-    sdhc0: sdhc@0 {
-        compatible = "zephyr,sdhc-spi-slot";
-        reg = <0>;
+&sdhc0 {
+    status = "okay";
+    pinctrl-0 = <&sdhc0_default>;
+    pinctrl-names = "default";
+    power-delay-ms = <250>;
+    sdmmc {
+        compatible = "zephyr,sdmmc-disk";
         status = "okay";
-        spi-max-frequency = <24000000>;
-        mmc {
-            compatible = "zephyr,sdmmc-disk";
-            status = "okay";
-        };
     };
 };

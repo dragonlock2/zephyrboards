@@ -1,0 +1,6 @@
+menuconfig MCUX_SDHC
+    bool "NXP MCUX SDHC driver"
+    default y
+    depends on DT_HAS_NXP_MCUX_SDHC_ENABLED
+    select SDHC_SUPPORTS_NATIVE_MODE
+    select PINCTRL

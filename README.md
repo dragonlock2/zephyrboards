@@ -32,8 +32,9 @@ west update
 
 | name | notes |
 | ---- | ----- |
-| LPC84x | uart, gpio working |
-| CH32X035 | usb, usbpd, adc, uart, non-isr gpio working |
+| LPC84x | uart, gpio |
+| CH32X035 | usb, usbpd, adc, uart, non-isr gpio |
+| K66F | sdhc |
 
 ## drivers
 

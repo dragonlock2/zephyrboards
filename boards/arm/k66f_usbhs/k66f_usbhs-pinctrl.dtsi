@@ -10,13 +10,21 @@
         };
     };
 
-    spi1_default: spi1_default {
+    sdhc0_default: sdhc0_default {
         group0 {
-            pinmux = <SPI1_SCK_PTE2>,
-                     <SPI1_SOUT_PTE3>,
-                     <SPI1_SIN_PTE1>;
+            pinmux = <SDHC0_DCLK_PTE2>,
+                     <SDHC0_CMD_PTE3>,
+                     <SDHC0_D0_PTE1>,
+                     <SDHC0_D1_PTE0>,
+                     <SDHC0_D2_PTE5>;
             drive-strength = "low";
             slew-rate = "fast";
+        };
+        group1 {
+            pinmux = <SDHC0_D3_PTE4>;
+            drive-strength = "low";
+            slew-rate = "fast";
+            bias-pull-down; // needed for DAT3 detection
         };
     };
 };

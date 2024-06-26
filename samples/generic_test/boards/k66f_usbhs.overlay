@@ -2,7 +2,7 @@
     grub {
         compatible = "test";
         leds = <&led_r &led_g &led_b>;
-        buttons = <&usr_btn &sd_det>;
+        buttons = <&usr_btn>;
         usb;
         sd;
     };

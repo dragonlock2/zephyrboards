@@ -1,0 +1,5 @@
+if SDHC
+
+rsource "Kconfig.mcux_sdhc"
+
+endif # SDHC

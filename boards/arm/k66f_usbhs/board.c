@@ -9,7 +9,7 @@ static int k66f_usbhs_init(void) {
     // board powered by internal regulator, need to disable inrush limit
     SIM->USBPHYCTL |= SIM_USBPHYCTL_USBDISILIM(1);
 
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(usbhs), okay) && CONFIG_USB_DC_NXP_EHCI
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(usbhs0), okay) && CONFIG_USB_DC_NXP_EHCI
     // TODO remove once use udc driver
     usb_phy_config_struct_t usbPhyConfig = {
         .D_CAL     = 0b0111,
