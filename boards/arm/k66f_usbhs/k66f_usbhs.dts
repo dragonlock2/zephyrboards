@@ -59,7 +59,7 @@
             reg = <0x400b1000 0x100>;
             interrupts = <81 0>; // SDHC_IRQn
             clocks = <&sim KINETIS_SIM_CORESYS_CLK 0x1030 17>; // kCLOCK_Sdhc0
-            max-bus-freq = <50000000>;
+            max-bus-freq = <25000000>; // 50MHz doesn't work on some cheap cards
             status = "disabled";
         };
     };

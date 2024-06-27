@@ -243,6 +243,15 @@ static int mcux_sdhc_request(const struct device *dev, struct sdhc_command *cmd,
                 return -ETIMEDOUT;
             }
         }
+        if (ret) {
+            uint32_t status = SDHC_GetPresentStatusFlags(cfg->base);
+            if (status & kSDHC_CommandInhibitFlag) {
+                SDHC_Reset(cfg->base, kSDHC_ResetCommand, 100);
+            }
+            if ((status & kSDHC_DataInhibitFlag) || SDHC_GetAdmaErrorStatusFlags(cfg->base)) {
+                SDHC_Reset(cfg->base, kSDHC_ResetData, 100);
+            }
+        }
     } while (ret != 0 && (cmd->retries-- > 0));
 
     // save response
@@ -382,7 +391,7 @@ static int mcux_sdhc_init(const struct device *dev) {
     data->props.host_caps.bus_8_bit_support   = (bool)(caps.flags & kSDHC_Support8BitFlag);
     data->props.host_caps.bus_4_bit_support   = (bool)(caps.flags & kSDHC_Support4BitFlag);
     data->props.host_caps.adma_2_support      = (bool)(caps.flags & kSDHC_SupportAdmaFlag);
-    data->props.host_caps.high_spd_support    = (bool)(caps.flags & kSDHC_SupportHighSpeedFlag);
+    data->props.host_caps.high_spd_support    = (bool)(caps.flags & kSDHC_SupportHighSpeedFlag) && (cfg->max_bus_freq > 25000000);
     data->props.host_caps.suspend_res_support = (bool)(caps.flags & kSDHC_SupportSuspendResumeFlag);
     data->props.host_caps.vol_330_support     = (bool)(caps.flags & kSDHC_SupportV330Flag);
     data->props.host_caps.vol_300_support     = 0; // kSDHC_SupportV300Flag
