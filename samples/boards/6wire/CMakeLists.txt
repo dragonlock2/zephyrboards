@@ -6,5 +6,7 @@ set(BOARD 6wire)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(6wire)
 
-target_sources(app PRIVATE src/main.c)
-target_sources(app PRIVATE src/fourwire.c)
+target_sources(app PRIVATE
+    src/main.c
+    src/fourwire.c
+)
