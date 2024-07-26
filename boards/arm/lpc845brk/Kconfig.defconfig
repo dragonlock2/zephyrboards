@@ -1,6 +1,0 @@
-if BOARD_LPC845BRK
-
-config BOARD
-    default "LPC845-BRK"
-
-endif # BOARD_LPC845BRK

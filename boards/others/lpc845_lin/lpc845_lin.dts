@@ -1,0 +1,86 @@
+/dts-v1/;
+#include <nxp/nxp_lpc845.dtsi>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+    model = "LPC845 LIN Breakout";
+    compatible = "nxp,lpc";
+
+    chosen {
+        zephyr,sram    = &sram0;
+        zephyr,flash   = &flash0;
+        zephyr,console = &uart0;
+    };
+
+    aliases {
+        led0 = &led_r;
+        led1 = &led_g;
+        led2 = &led_b;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led_r: led_r   { gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;  };
+        led_b: led_b   { gpios = <&gpio0 9 GPIO_ACTIVE_LOW>;  };
+        led_g: led_g   { gpios = <&gpio0 8 GPIO_ACTIVE_LOW>;  };
+        pwr_en: pwr_en { gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>; };
+    };
+};
+
+&uart0 {
+    status = "okay";
+    pinctrl = <P0_25 P0_24>;
+    current-speed = <115200>;
+};
+
+&uart1 {
+    status = "okay";
+    pinctrl = <P0_17 P0_18>;
+    current-speed = <19200>;
+    lin0: lin0 {
+        compatible = "virtual,lin-uart";
+        status = "okay";
+        bitrate = <19200>;
+    };
+};
+
+&uart2 {
+    status = "okay";
+    pinctrl = <P0_20 P0_19>;
+    current-speed = <19200>;
+    lin1: lin1 {
+        compatible = "virtual,lin-uart";
+        status = "okay";
+        bitrate = <19200>;
+    };
+};
+
+&uart3 {
+    status = "okay";
+    pinctrl = <P0_21 P0_22>;
+    current-speed = <19200>;
+    lin2: lin2 {
+        compatible = "virtual,lin-uart";
+        status = "okay";
+        bitrate = <19200>;
+    };
+};
+
+&uart4 {
+    status = "okay";
+    pinctrl = <P0_23 P0_14>;
+    current-speed = <19200>;
+    lin3: lin3 {
+        compatible = "virtual,lin-uart";
+        status = "okay";
+        bitrate = <19200>;
+    };
+};
+
+&gpio0 {
+    status = "okay";
+};
+
+&gpio1 {
+    status = "okay";
+};

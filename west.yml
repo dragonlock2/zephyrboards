@@ -8,11 +8,11 @@ manifest:
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
-      revision: v3.6.0
+      revision: v3.7.0-rc3
       import: true
     - name: ch32x035
       remote: openwch
-      revision: 0f6d66efa42bc83dd1def103bd0f2b4d79470550
+      revision: ae2836e229761236ff188307636db05d71fc3cd2
       path: modules/hal/wch/ch32x035
 
   self:

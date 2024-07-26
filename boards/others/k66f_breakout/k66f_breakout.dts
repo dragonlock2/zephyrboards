@@ -1,0 +1,142 @@
+/dts-v1/;
+#include <nxp/nxp_k66.dtsi>
+#include "k66f_breakout-pinctrl.dtsi"
+
+/ {
+    model = "MK66F Breakout Board";
+    compatible = "nxp,mk66f18", "nxp,k66f", "nxp,k6x";
+
+    chosen {
+        zephyr,sram = &sram0;
+        zephyr,flash = &flash0;
+        zephyr,console = &uart0;
+    };
+
+    aliases {
+        led0 = &led_red;
+        sw0 = &user_button;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led_red:   led_0 { gpios = <&gpiod 6 GPIO_ACTIVE_LOW>; };
+        led_green: led_1 { gpios = <&gpiod 5 GPIO_ACTIVE_LOW>; };
+        led_blue:  led_2 { gpios = <&gpiod 4 GPIO_ACTIVE_LOW>; };
+    };
+
+    buttons {
+        compatible = "gpio-keys";
+        user_button: button_0 { gpios = <&gpiod 7  (GPIO_ACTIVE_LOW  | GPIO_PULL_UP)>;   };
+        sd_detect:   sd_det_0 { gpios = <&gpiod 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>; };
+        usbid_0:     usbid_0  { gpios = <&gpioe 9  (GPIO_ACTIVE_LOW  | GPIO_PULL_UP)>;   };
+        usbid_1:     usbid_1  { gpios = <&gpioe 10 (GPIO_ACTIVE_LOW  | GPIO_PULL_UP)>;   };
+    };
+};
+
+&cpu0 {
+    clock-frequency = <120000000>;
+};
+
+&sim {
+    pllfll-select = <KINETIS_SIM_PLLFLLSEL_MCGPLLCLK>;
+    er32k-select = <KINETIS_SIM_ER32KSEL_RTC>;
+};
+
+&gpioa {
+    status = "okay";
+};
+
+&gpiob {
+    status = "okay";
+};
+
+&gpioc {
+    status = "okay";
+};
+
+&gpiod {
+    status = "okay";
+};
+
+&gpioe {
+    status = "okay";
+};
+
+&uart0 {
+    status = "okay";
+    current-speed = <115200>;
+    pinctrl-0 = <&uart0_default>;
+    pinctrl-names = "default";
+};
+
+&adc0 {
+    status = "okay";
+};
+
+&temp0 {
+    status = "okay";
+};
+
+&spi0 {
+    status = "okay";
+    pinctrl-0 = <&spi0_default>;
+    pinctrl-names = "default";
+    cs-gpios = <&gpioc 4 GPIO_ACTIVE_LOW>;
+};
+
+&spi1 {
+    status = "okay";
+    pinctrl-0 = <&spi1_default>;
+    pinctrl-names = "default";
+    cs-gpios = <&gpioe 4 GPIO_ACTIVE_LOW>;
+
+    sdhc0: sdhc@0 {
+        compatible = "zephyr,sdhc-spi-slot";
+        reg = <0>;
+        status = "okay";
+        spi-max-frequency = <24000000>;
+        mmc {
+            compatible = "zephyr,sdmmc-disk";
+            status = "okay";
+        };
+    };
+};
+
+&i2c0 {
+    status = "okay";
+    pinctrl-0 = <&i2c0_default>;
+    pinctrl-names = "default";
+};
+
+&flexcan0 {
+    status = "okay";
+    pinctrl-0 = <&flexcan0_default>;
+    pinctrl-names = "default";
+};
+
+zephyr_udc0: &usbotg {
+    compatible = "nxp,kinetis-usbd";
+    status = "okay";
+    num-bidir-endpoints = <8>;
+};
+
+&enet_mac {
+    status = "okay";
+    pinctrl-0 = <&pinmux_enet>;
+    pinctrl-names = "default";
+    phy-handle = <&phy>;
+    zephyr,random-mac-address;
+    phy-connection-type = "rmii";
+};
+
+&enet_mdio {
+    status = "okay";
+    pinctrl-0 = <&pinmux_enet_mdio>;
+    pinctrl-names = "default";
+    phy: phy@0 {
+        compatible = "microchip,ksz8081";
+        reg = <0>;
+        status = "okay";
+        microchip,interface-type = "rmii-25MHz";
+    };
+};

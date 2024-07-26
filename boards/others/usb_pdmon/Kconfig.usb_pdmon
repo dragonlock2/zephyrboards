@@ -1,0 +1,2 @@
+config BOARD_USB_PDMON
+    select SOC_CH32X035

@@ -1,0 +1,7 @@
+family:
+- name: lpc
+  series:
+  - name: lpc84x
+    socs:
+    - name: lpc844
+    - name: lpc845

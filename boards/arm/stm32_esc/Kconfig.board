@@ -1,3 +1,0 @@
-config BOARD_STM32_ESC
-    bool "stm32_esc"
-    depends on SOC_STM32F103XB

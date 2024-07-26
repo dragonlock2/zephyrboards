@@ -1,0 +1,5 @@
+board:
+  name: k66f_usbhs
+  vendor: others
+  socs:
+    - name: mk66f18

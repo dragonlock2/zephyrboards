@@ -1,0 +1,5 @@
+board:
+  name: jabican_usb_pro
+  vendor: others
+  socs:
+    - name: mk22f51212 # actually mk22f1m0avlh12

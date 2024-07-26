@@ -1,0 +1,2 @@
+config BOARD_STM32_ESC
+    select SOC_STM32F103XB

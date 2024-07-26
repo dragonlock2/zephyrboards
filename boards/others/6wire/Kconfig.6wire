@@ -1,0 +1,2 @@
+config BOARD_6WIRE
+    select SOC_SAMD21G16A

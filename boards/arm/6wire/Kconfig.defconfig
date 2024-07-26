@@ -1,3 +1,0 @@
-config BOARD
-    default "6wire"
-    depends on BOARD_6WIRE

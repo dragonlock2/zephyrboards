@@ -11,22 +11,19 @@ LOG_MODULE_REGISTER(network_test, CONFIG_LOG_DEFAULT_LEVEL);
 static struct k_sem lock;
 static struct net_mgmt_event_callback mgmt_cb;
 
-static void handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
-                    struct net_if *iface) {
+static void handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event, struct net_if *iface) {
     if (mgmt_event != NET_EVENT_IPV4_ADDR_ADD) {
         return;
     }
-
     for (int i = 0; i < NET_IF_MAX_IPV4_ADDR; i++) {
         char buf[NET_IPV4_ADDR_LEN];
-        if (iface->config.ip.ipv4->unicast[i].addr_type != NET_ADDR_DHCP) {
+        if (iface->config.ip.ipv4->unicast[i].ipv4.addr_type != NET_ADDR_DHCP) {
             continue;
         }
         LOG_INF("Got address: %s", 
-            net_addr_ntop(AF_INET, &iface->config.ip.ipv4->unicast[i].address.in_addr,
-                buf, sizeof(buf)));
+            net_addr_ntop(AF_INET, &iface->config.ip.ipv4->unicast[i].ipv4.address.in_addr, buf, sizeof(buf))
+        );
     }
-
     k_sem_give(&lock);
 }
 
@@ -39,11 +36,9 @@ static int network_test(void) {
     net_dhcpv4_start(net_if_get_default());
 
     k_sem_take(&lock, K_FOREVER);
-
     return 0;
 }
 
 SYS_INIT(network_test, APPLICATION, 9);
 
-#endif // DT_PROP(TEST_NODE, usb)
-
+#endif // DT_PROP(TEST_NODE, network)

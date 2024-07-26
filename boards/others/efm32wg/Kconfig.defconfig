@@ -1,0 +1,12 @@
+if BOARD_EFM32WG
+
+config CMU_HFXO_FREQ
+    default 48000000
+
+config CMU_LFXO_FREQ
+    default 32768
+
+config CMU_HFRCO_FREQ
+    default 14000000
+
+endif # BOARD_EFM32WG

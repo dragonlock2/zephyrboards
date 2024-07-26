@@ -1,0 +1,5 @@
+board:
+  name: lpc845_lin
+  vendor: others
+  socs:
+  - name: lpc845

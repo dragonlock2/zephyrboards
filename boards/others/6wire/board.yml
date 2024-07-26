@@ -1,0 +1,5 @@
+board:
+  name: 6wire
+  vendor: others
+  socs:
+  - name: samd21g16a

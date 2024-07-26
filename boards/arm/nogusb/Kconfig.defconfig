@@ -1,6 +1,0 @@
-if BOARD_NOGUSB
-
-config BOARD
-	default "nogusb"
-
-endif # BOARD_NOGUSB

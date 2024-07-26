@@ -1,4 +1,0 @@
-config BOARD_LPC845BRK
-    bool "LPC845-BRK Development Board"
-    depends on SOC_SERIES_LPC84X
-    select SOC_PART_NUMBER_LPC845M301JBD48

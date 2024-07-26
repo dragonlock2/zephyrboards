@@ -1,0 +1,5 @@
+board:
+  name: usb_pdmon
+  vendor: others
+  socs:
+    - name: ch32x035

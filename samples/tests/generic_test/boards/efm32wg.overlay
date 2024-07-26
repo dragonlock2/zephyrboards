@@ -4,7 +4,7 @@
         leds = <&led_red &led_green &led_blue>;
         buttons = <&user_button>;
         // spi = <&usart0 &usart1>; /* TODO get working */
-        i2c = <&i2c0 &i2c1>;
+        // i2c = <&i2c0 &i2c1>; /* TODO get working */
         uart = <&leuart0 &leuart1>;
     };
 };

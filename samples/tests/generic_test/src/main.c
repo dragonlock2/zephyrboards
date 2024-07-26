@@ -8,7 +8,7 @@ int main() {
 #if DT_PROP(TEST_NODE, sd)
     extern int sd_test(void);
     sd_test(); // can't use SYS_INIT :(
-#endif // DT_PROP(TEST_NODE, sd)
+#endif
 
     printk("Flashing led0 in main at 1Hz so it does something...\r\n");
     gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);

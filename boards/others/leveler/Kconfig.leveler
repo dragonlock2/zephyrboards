@@ -1,0 +1,2 @@
+config BOARD_LEVELER
+    select SOC_STM32F401XE

@@ -42,10 +42,12 @@ void set_rgb(double r, double g, double b) {
 }
 
 // app
-K_THREAD_STACK_DEFINE(fourwire_stack_area, 256);
+K_THREAD_STACK_DEFINE(fourwire_stack_area, 512);
 
 int main() {
+#if CONFIG_USB_DEVICE_STACK
     usb_enable(NULL);
+#endif
 
     set_rgb(0.01, 0.01, 0.01);
     gpio_pin_configure_dt(&btn, GPIO_INPUT);

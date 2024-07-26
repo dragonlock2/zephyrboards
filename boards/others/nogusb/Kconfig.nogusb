@@ -1,0 +1,2 @@
+config BOARD_NOGUSB
+    select SOC_STM32G0B1XX
