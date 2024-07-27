@@ -8,7 +8,7 @@ manifest:
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
-      revision: v3.7.0-rc3
+      revision: v3.7.0
       import: true
     - name: ch32x035
       remote: openwch
