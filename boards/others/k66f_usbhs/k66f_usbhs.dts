@@ -1,5 +1,6 @@
 /dts-v1/;
 
+#include <zephyr/dt-bindings/input/input-event-codes.h>
 #include <nxp/nxp_k66.dtsi>
 #include "k66f_usbhs-pinctrl.dtsi"
 
@@ -32,8 +33,8 @@
 
     buttons {
         compatible = "gpio-keys";
-        usr_btn: usr_btn { gpios = <&gpioc 4  (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; };
-        sd_det:  sd_det  { gpios = <&gpioa 10 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; };
+        usr_btn: usr_btn { gpios = <&gpioc 4  (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; zephyr,code = <INPUT_KEY_0>; };
+        sd_det:  sd_det  { gpios = <&gpioa 10 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; zephyr,code = <INPUT_KEY_1>; };
     };
 
     // additions to make USB HS work
@@ -44,13 +45,19 @@
     };
 
     soc {
-        usbhs0: usbd@400a1000 { // TODO use usbphy and UDC driver once UDC stabilized
+        usbhs0: usbd@400a1000 {
             compatible = "nxp,ehci";
             reg = <0x400a1000 0x200>;
             interrupts = <93 1>; // USBHS_IRQn
             interrupt-names = "usb_otg";
             clocks = <&usbclk>;
             num-bidir-endpoints = <8>;
+            status = "disabled";
+        };
+
+        usbphy0: usbphy@400a2000 {
+            compatible = "nxp,usbphy";
+            reg = <0x400a2000 0x1000>;
             status = "disabled";
         };
 
@@ -112,6 +119,14 @@
 
 zephyr_udc0: &usbhs0 {
     status = "okay";
+    phy_handle = <&usbphy0>;
+};
+
+&usbphy0 {
+    status = "okay";
+    tx-d-cal = <7>;
+    tx-cal-45-dp-ohms = <6>;
+    tx-cal-45-dm-ohms = <6>;
 };
 
 &sdhc0 {

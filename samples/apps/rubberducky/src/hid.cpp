@@ -21,7 +21,7 @@ static struct {
     hid_os os;
 } data;
 
-extern "C" void usb_os_detect(struct usb_setup_packet *setup) {
+extern "C" int usb_handle_bos(struct usb_setup_packet *setup, int32_t*, uint8_t**) {
     if (usb_reqtype_is_to_host(setup) && USB_GET_DESCRIPTOR_TYPE(setup->wValue) == USB_DESC_STRING) {
         data.cnt_wl++;
         switch (setup->wLength) {
@@ -30,6 +30,7 @@ extern "C" void usb_os_detect(struct usb_setup_packet *setup) {
             case 0xff: data.cnt_ff++; break;
         };
     }
+    return -ENOTSUP;
 }
 
 static void hid_usb_cb(enum usb_dc_status_code cb_status, const uint8_t *param) {
@@ -88,7 +89,7 @@ void hid_init(void) {
         data.os = hid_os::UNKNOWN;
     }
 
-    LOG_INF("usb connected");
+    LOG_INF("usb connected %d", data.os);
 }
 
 hid_os hid_get_os(void) {

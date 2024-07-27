@@ -13,6 +13,6 @@ int main(void) {
     payload_init();
     hid_init();
 
-    LOG_INF("running payload");
     payload_run();
+    rgb_write(rgb_color::GREEN);
 }

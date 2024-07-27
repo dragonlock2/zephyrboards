@@ -110,6 +110,12 @@ void payload_init(void) {
 
 void payload_run(void) {
     if (data.run) {
+        LOG_INF("start");
         data.run();
+        LOG_INF("done");
+    } else {
+        LOG_ERR("no payload run()");
     }
 }
+
+// TODO need to export symbols
