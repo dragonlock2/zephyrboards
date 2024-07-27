@@ -1,5 +1,7 @@
 #pragma once
 
+extern "C" {
+
 enum hid_os {
     UNKNOWN,
     MACOS,
@@ -31,3 +33,5 @@ void hid_init(void);
 hid_os hid_get_os(void);
 void hid_keyboard_raw(const hid_keyboard_report &report);
 void hid_mouse_raw(const hid_mouse_report &report);
+
+}

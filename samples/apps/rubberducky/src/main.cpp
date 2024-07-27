@@ -14,5 +14,9 @@ int main(void) {
     hid_init();
 
     payload_run();
+    hid_keyboard_report k{};
+    hid_mouse_report m{};
+    hid_keyboard_raw(k);
+    hid_mouse_raw(m);
     rgb_write(rgb_color::GREEN);
 }

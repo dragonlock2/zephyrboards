@@ -1,11 +1,14 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/llext/llext.h>
-#include <zephyr/llext/buf_loader.h>
+#include <zephyr/llext/loader.h>
+#include <zephyr/llext/symbol.h>
 #include <zephyr/storage/disk_access.h>
 #include <zephyr/fs/fs.h>
 #include <ff.h>
 #include "error.h"
+#include "hid.h"
+#include "rgb.h"
 #include "payload.h"
 
 LOG_MODULE_REGISTER(payload, CONFIG_LOG_DEFAULT_LEVEL);
@@ -14,14 +17,28 @@ LOG_MODULE_REGISTER(payload, CONFIG_LOG_DEFAULT_LEVEL);
 #define MOUNT_PT   "/SD:"
 #define ROOT_DIR   "/SD:/"
 
+struct llext_file_loader {
+    struct fs_file_t payload;
+    struct llext_loader loader;
+};
+
 static struct {
     FATFS fat_fs;
     struct fs_mount_t mp;
-    uint8_t buffer[CONFIG_LLEXT_HEAP_SIZE * 1024] __aligned(4);
-    struct llext_buf_loader loader;
+    struct llext_file_loader loader;
     struct llext *payload;
     void (*run)(void);
 } data;
+
+static int llext_file_read(struct llext_loader *ldr, void *out, size_t len) {
+    struct llext_file_loader *lf = CONTAINER_OF(ldr, struct llext_file_loader, loader);
+    return fs_read(&lf->payload, out, len) == (ssize_t) len ? 0 : -1;
+}
+
+static int llext_file_seek(struct llext_loader *ldr, size_t pos) {
+    struct llext_file_loader *lf = CONTAINER_OF(ldr, struct llext_file_loader, loader);
+    return fs_seek(&lf->payload, pos, FS_SEEK_SET);
+}
 
 void payload_init(void) {
     // mount filesystem
@@ -64,25 +81,24 @@ void payload_init(void) {
         error_fatal(error_reason::PAYLOAD);
     }
 
-    // read payload
-    struct fs_file_t payload;
-    fs_file_t_init(&payload);
-    if (fs_open(&payload, payload_name, FS_O_READ) != 0) {
+    // load payload
+    fs_file_t_init(&data.loader.payload);
+    if (fs_open(&data.loader.payload, payload_name, FS_O_READ) != 0) {
         LOG_ERR("failed open payload");
         error_fatal(error_reason::PAYLOAD);
     }
 
-    ssize_t payload_len = fs_read(&payload, data.buffer, sizeof(data.buffer));
-    if (payload_len < 0) {
-        LOG_ERR("failed read payload");
-        error_fatal(error_reason::PAYLOAD);
-    }
-    if (payload_len == sizeof(data.buffer)) {
-        LOG_ERR("payload too large");
-        error_fatal(error_reason::PAYLOAD);
+    data.loader.loader.read = llext_file_read;
+    data.loader.loader.seek = llext_file_seek;
+    data.loader.loader.peek = NULL;
+    struct llext_load_param loader_param = LLEXT_LOAD_PARAM_DEFAULT;
+    if (llext_load(&data.loader.loader, "payload", &data.payload, &loader_param) == 0) {
+        data.run = reinterpret_cast<void (*)(void)>(llext_find_sym(&data.payload->exp_tab, "run"));
+    } else {
+        LOG_ERR("failed load payload");
     }
 
-    if (fs_close(&payload) != 0) {
+    if (fs_close(&data.loader.payload) != 0) {
         LOG_ERR("failed close payload");
         error_fatal(error_reason::PAYLOAD);
     }
@@ -90,20 +106,6 @@ void payload_init(void) {
     // unmount filesystem
     if (fs_unmount(&data.mp) != 0) {
         LOG_ERR("failed fatfs unmount");
-        error_fatal(error_reason::PAYLOAD);
-    }
-
-    // load payload
-    data.loader = LLEXT_BUF_LOADER(data.buffer, sizeof(data.buffer));
-    struct llext_load_param loader_param = LLEXT_LOAD_PARAM_DEFAULT;
-    if (llext_load(&data.loader.loader, "payload", &data.payload, &loader_param) != 0) {
-        LOG_ERR("failed load payload");
-        error_fatal(error_reason::PAYLOAD);
-    }
-
-    data.run = reinterpret_cast<void (*)(void)>(llext_find_sym(&data.payload->exp_tab, "run"));
-    if (data.run == NULL) {
-        LOG_ERR("payload doesn't contain run()");
         error_fatal(error_reason::PAYLOAD);
     }
 }
@@ -115,7 +117,11 @@ void payload_run(void) {
         LOG_INF("done");
     } else {
         LOG_ERR("no payload run()");
+        error_fatal(error_reason::PAYLOAD);
     }
 }
 
-// TODO need to export symbols
+EXPORT_SYMBOL(hid_get_os);
+EXPORT_SYMBOL(hid_keyboard_raw);
+EXPORT_SYMBOL(hid_mouse_raw);
+EXPORT_SYMBOL(rgb_write);

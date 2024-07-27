@@ -1,5 +1,7 @@
 #pragma once
 
+extern "C" {
+
 enum class rgb_color {
     OFF,
     RED,
@@ -13,3 +15,5 @@ enum class rgb_color {
 
 void rgb_init(void);
 void rgb_write(rgb_color c);
+
+}

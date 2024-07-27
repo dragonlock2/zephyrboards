@@ -1,11 +1,27 @@
-#include <zephyr/kernel.h>
-#include <zephyr/llext/symbol.h>
+#include "common.h"
 
 extern "C" void run(void) {
-    // TODO need to manually export symbols to be available (or pass in api block)
-    // TODO os rgb, jiggle
-    printk("hi\r\n");
+    printk("setting rgb to os\r\n");
+    switch (hid_get_os()) {
+        case hid_os::MACOS:   rgb_write(rgb_color::GREEN); break;
+        case hid_os::WINDOWS: rgb_write(rgb_color::BLUE);  break;
+        case hid_os::LINUX:   rgb_write(rgb_color::RED);   break;
+        default: rgb_write(rgb_color::OFF); break;
+    }
+
+    printk("typing stuff\r\n");
+    kb_print("hello world!");
+
+    printk("mouse jiggling\r\n");
+    while (true) {
+        hid_mouse_report m{};
+        m.x = 10;
+        hid_mouse_raw(m);
+        k_msleep(10);
+        m.x = -10;
+        hid_mouse_raw(m);
+        k_msleep(10);
+    }
 }
 
-// avoid conversion error
-struct llext_symbol Z_GENERIC_SECTION(".exported_sym") __used symbol_run = {"run", (void*) &run};
+LL_EXTENSION_SYMBOL(run);
