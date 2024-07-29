@@ -18,5 +18,10 @@ int main(void) {
     hid_mouse_report m{};
     hid_keyboard_raw(k);
     hid_mouse_raw(m);
-    rgb_write(rgb_color::GREEN);
+    while (true) {
+        rgb_write(rgb_color::GREEN);
+        k_msleep(50);
+        rgb_write(rgb_color::OFF);
+        k_msleep(50);
+    }
 }

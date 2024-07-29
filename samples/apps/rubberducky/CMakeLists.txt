@@ -27,3 +27,4 @@ function(add_payload PAYLOAD_NAME)
 endfunction()
 
 add_payload(example)
+add_payload(shell)

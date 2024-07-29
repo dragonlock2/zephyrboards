@@ -74,7 +74,7 @@ void hid_init(void) {
         error_fatal(error_reason::HID);
     }
     k_sem_take(&data.usb_conn, K_FOREVER);
-    k_msleep(250); // first report ignored if too soon
+    k_msleep(500); // reports ignored if too soon
 
     // algorithm inspired by https://github.com/qmk/qmk_firmware/blob/master/quantum/os_detection.c
     // due to OS updates, this may not work forever
