@@ -1,0 +1,27 @@
+[package]
+name = "revshell"
+default-run = "client"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "client"
+path = "src/client.rs"
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
+
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+termios = "0.3"
+
+[dependencies]
+rustls-pemfile = "2.1"
+tokio = { version = "1", features = ["full"] }
+tokio-rustls = "0.26"
+
+# Windows needs more setup to build
+# https://aws.github.io/aws-lc-rs/requirements/windows.html
+# https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
+
+# TODO add to payload
