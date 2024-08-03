@@ -7,7 +7,7 @@ use tokio_rustls::rustls;
 const SHELL: &str = "powershell.exe";
 
 #[cfg(target_os = "windows")]
-const SHELL_ARGS: &[&str] = &["-WindowStyle", "hidden"]; // TODO redirect everything
+const SHELL_ARGS: &[&str] = &["-WindowStyle", "hidden"]; // TODO redirect everything, gets stuck sometimes
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 const SHELL: &str = "/bin/bash";

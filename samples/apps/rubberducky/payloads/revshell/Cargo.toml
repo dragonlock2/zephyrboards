@@ -23,5 +23,3 @@ tokio-rustls = "0.26"
 # Windows needs more setup to build
 # https://aws.github.io/aws-lc-rs/requirements/windows.html
 # https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
-
-# TODO add to payload

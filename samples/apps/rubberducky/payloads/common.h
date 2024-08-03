@@ -7,13 +7,20 @@
 #include "rgb.h"
 
 static inline void kb_type(uint8_t key, uint8_t mod) {
+    // specific hw/sw combos can miss reports if only send one w/o delay
     hid_keyboard_report k{};
     k.keycode[0] = key;
     k.modifier = mod;
     hid_keyboard_raw(k); // press
+    hid_keyboard_raw(k);
+    hid_keyboard_raw(k);
+    hid_keyboard_raw(k);
     k.keycode[0] = 0;
     k.modifier = 0;
     hid_keyboard_raw(k); // release
+    hid_keyboard_raw(k);
+    hid_keyboard_raw(k);
+    hid_keyboard_raw(k);
 }
 
 static inline void kb_print(const char *s) {
